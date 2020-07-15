@@ -1,0 +1,40 @@
+,Stab attack,Slash attack,Crush attack,Magic attack,Ranged attack,Stab defence,Slash defence,Crush defence,Magic defence,Ranged defence,Melee strength,Ranged strength,Magic damage,Prayer
+None,,,,,,,,,,,,,,0
+Avernic defender,30,29,28,-5,-4,30,29,28,-5,-4,8,,,
+Dragonfire shield,,,,-10,-5,70,75,72,10,72,7,,,
+Dragon defender,25,24,23,-3,-2,25,24,23,-3,-2,6,,,
+Crystal shield,,,,-10,-10,51,54,53,0,80,,,,
+Dragon sq hield,,,,-6,-2,50,52,48,,50,,,,
+3rd age kiteshield,,,,-10,-4,63,65,61,-3,63,,,,
+Rune kiteshield,,,,-8,-2,44,48,46,-1,46,,,,
+Dragon kiteshield,,,,-8,-2,56,60,58,-1,58,,,,
+Rune defender,20,19,18,-3,-2,20,19,18,-3,-2,5,,,
+Obsidian shield,,,,-12,-8,40,42,38,0,65,5,,,
+Unholy book,8,8,8,8,8,,,,,,,,,5
+Book of balance,4,4,4,4,4,4,4,4,4,4,,,,5
+Falador shield 1,,,,-8,-2,8,10,9,-1,9,,,,1
+Falador shield 2,,,,-8,-2,13,15,14,-1,14,,,,3
+Falador shield 3,,,,-8,-2,18,22,20,-1,20,,,,4
+Falador shield 4,,,,-8,-2,27,31,29,-1,29,,,,5
+Elysian spirit shield,,,,,,63,65,75,2,57,,,,3
+Arcane spirit shield,,,,20,,53,55,73,2,52,,,,3
+Siren's tome,,,,25,,-10,-10,-10,20,-10,,,0.04,-5
+Spectral spirit shield,,,,,,53,55,73,30,52,,,,3
+Mind shield,,,,,,,,,9,,,,,
+Ancient Wyvern shield,-10,-10,-10,15,-10,72,80,75,15,-5,-2,,,
+Anti-dragon shield,,,,,,7,8,9,2,8,,,,
+Twisted buckler,-7,-8,-7,-10,18,22,24,22,26,58,,,,
+Dragonfire ward,-10,-10,-10,-10,15,15,20,18,22,68,-2,,,
+Odium ward,-12,-12,-12,-8,12,,,,24,52,,,,
+Hard leather shield,-15,-15,-11,-10,2,8,7,7,5,9,,,,
+Snakeskin shield,-15,-15,-11,-10,3,10,9,8,7,10,,,,
+Green d'hide shield,-15,-15,-11,-10,4,14,12,11,9,11,,,,
+Blue d'hide shield,-15,-15,-11,-10,5,16,14,12,12,12,,,,
+Red d'hide shield,-15,-15,-11,-10,6,18,16,14,13,13,,,,
+Black d'hide shield,-15,-15,-11,-10,7,21,18,16,15,14,,,,
+Mage's book,,,,15,,,,,15,,,,,
+Malediction ward,-8,-8,-8,12,-12,50,52,48,15,,,,,
+Tome of fire,,,,8,,,,,8,,,,,
+Book of law,,,,,10,,,,,,,,,5
+Book of war,,,,,,,,,,,2,,,5
+Book of darkness,,,,10,,,,,,,,,,5
