@@ -22,12 +22,6 @@ public class EquipmentSet
 	
 	private Armor[] armorArray = {head, cape, amulet, chest, legs, shield, gloves, boots, ring};
 	
-	private int atkLvl	   = 1;
-	private int strLvl 	   = 1;
-	private int defLvl 	   = 1;
-	private int magLvl 	   = 1;
-	private int rngLvl     = 1;
-	
 	public int stabAtk     = 0;
 	public int slashAtk    = 0;
 	public int crushAtk    = 0;
@@ -59,13 +53,6 @@ public class EquipmentSet
 	public void setCombatStyle(Pair<AttackStyle, DamageType> style)
 		{ this.combatStyle = style; }
 	
-	public void setAtkLvl(int atkLvl) { this.atkLvl = atkLvl; }
-	public void setStrLvl(int strLvl) { this.strLvl = strLvl; }
-	public void setDefLvl(int defLvl) { this.defLvl = defLvl; }
-	public void setMagLvl(int magLvl) { this.magLvl = magLvl; }
-	public void setRngLvl(int rngLvl) { this.rngLvl = rngLvl; }
-	
-	
 
 	public EquipmentSet()
 	{
@@ -89,6 +76,8 @@ public class EquipmentSet
 		rangeStr = weapon.rangeStr + ammo.rangeStr;
 		magicDmg = weapon.magicDmg;
 		prayerBonus = weapon.prayerBonus + ammo.prayerBonus;
+		
+		combatStyle.equals(null);
 		
 		for(int i = 0; i < armorArray.length; i++)
 		{
