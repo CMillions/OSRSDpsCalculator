@@ -7,13 +7,15 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.control.TextField;
 
 public class LimitedTextField extends TextField
-{
+{	
 	private final IntegerProperty maxLength;
+	private boolean integersOnly;
 	
 	public LimitedTextField()
 	{
 		super();
 		this.maxLength = new SimpleIntegerProperty();
+		this.integersOnly = false;
 	}
 	
 	public IntegerProperty maxLengthProperty()
@@ -32,6 +34,16 @@ public class LimitedTextField extends TextField
 		this.maxLength.setValue(maxLength);
 	}
 	
+	public void setIntegersOnly(boolean intOnly)
+	{
+		this.integersOnly = intOnly;
+	}
+	
+	public boolean getIntegersOnly()
+	{
+		return this.integersOnly;
+	}
+	
 	@Override
     public void replaceText(int start, int end, String insertedText) 
 	{
@@ -44,16 +56,25 @@ public class LimitedTextField extends TextField
         {
             // Get the text in the textfield, before the user enters something
             String currentText = this.getText() == null ? "" : this.getText();
-
+            
             // Compute the text that should normally be in the textfield now
             String finalText = currentText.substring(0, start) + insertedText + currentText.substring(end);
-
+            
             // If the max length is not excedeed
             int numberOfexceedingCharacters = finalText.length() - this.getMaxLength();
             if (numberOfexceedingCharacters <= 0) 
             {
-                // Normal behavior
-                super.replaceText(start, end, insertedText);
+        		// Normal behavior
+            	if(integersOnly)
+            	{
+            		String filtered = insertedText.replaceAll("[^0-9]", "");
+            		super.replaceText(start, end, filtered);
+            	}
+            	else
+            	{
+            		super.replaceText(start, end, insertedText);
+            	}
+            	
             }
             else 
             {
@@ -68,4 +89,5 @@ public class LimitedTextField extends TextField
             }
         }
     }
+	
 }

@@ -9,6 +9,8 @@
  *     
  * Big thanks to Bitterkoekje for the Google Sheets calculator. I split up the .csv files from
  * the online version to create this program.
+ * 
+ * Most of the layout is a pain in the ass to do since it's positioned by hand
  *
  */
 
@@ -32,6 +34,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -50,6 +53,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Pair;
+import potion.Potion;
 import utils.ComboBoxAutoComplete;
 import utils.LimitedTextField;
 
@@ -70,7 +74,8 @@ public class Main extends Application
 	final static String NECKLACES_FILE 		  = "necklaces.csv";
 	final static String ENEMIES_FILE		  = "enemies.csv";
 	
-	// URLs for skill icons
+	// URLs for icons
+	final static String PROGRAM_ICON_URL  = "res/images/program_icon.png";
 	final static String ATTACK_ICON_URL   = "res/images/attack_icon.png";
 	final static String STRENGTH_ICON_URL = "res/images/strength_icon.png";
 	final static String DEFENSE_ICON_URL  = "res/images/defense_icon.png";
@@ -78,9 +83,12 @@ public class Main extends Application
 	final static String RANGE_ICON_URL    = "res/images/ranged_icon.png";
 	final static String HP_ICON_URL       = "res/images/hp_icon.png";
 	final static String PRAYER_ICON_URL   = "res/images/prayer_icon.png";
+	final static String STATS_ICON_URL    = "res/images/stats_icon.png";
+	final static String POTION_ICON_URL	  = "res/images/potion_icon.png";
+	final static String OVERLOAD_ICON_URL = "res/images/raids_overload_icon.png";
 	
 	// JavaFX Constants
-	final static int PREF_COMBOBOX_WIDTH = 225;
+	final static int PREF_COMBOBOX_WIDTH = 200;
 	final static int PREF_COMBOBOX_HEIGHT = 20;
 	final static int PREF_TEXTFIELD_WIDTH = 1;
 	
@@ -103,18 +111,36 @@ public class Main extends Application
 	private static List<Label> comboBoxLabels;
 	private static EquipmentSet currentSet;
 	
-	private static Armor emptyArmor; 
+	private final static int WINDOW_WIDTH = 1600;
+	private final static int WINDOW_HEIGHT = 900;
 	
-	private final static int WINDOW_WIDTH = 1280;
-	private final static int WINDOW_HEIGHT = 720;
+	// Used to calculate max hit
+	private static int atkLvl = 99;
+	private static int strLvl = 99;
+	private static int defLvl = 99;
+	private static int magLvl = 99;
+	private static int rngLvl = 99;
+	private static int hpLvl = 99;
+	private static int prayerLvl = 99;
 	
-	private static int atkLvl;
-	private static int strLvl;
-	private static int defLvl;
-	private static int magLvl;
-	private static int rngLvl;
-	private static int hpLvl;
-	private static int prayerLvl;
+	private static int atkPotionBonus;
+	private static int strPotionBonus;
+	private static int defPotionBonus;
+	private static int magPotionBonus;
+	private static int rngPotionBonus;
+	
+	private static float atkPrayerBonus;
+	private static float strPrayerBonus;
+	private static float defPrayerBonus;
+	private static float magPrayerBonus;
+	private static float magDefenseBonus;
+	private static float rngPrayerBonus;
+	private static float rngStrengthBonus;
+	
+	
+	private static int prayerBonus;
+	private static int otherBonus;
+	private static int styleBonus;
 	
 	// floor((StrLvl + PotionBonus) * PrayerBonus * OtherBonus) + StyleBonus
 	private static int effectiveStrength;
@@ -130,6 +156,7 @@ public class Main extends Application
 		
 		Scene mainScene = new Scene(createLayoutPane(), WINDOW_WIDTH, WINDOW_HEIGHT);
 		
+		primaryStage.getIcons().add(new Image("file:res/images/program_icon.png"));
 		primaryStage.setScene(mainScene);
 		primaryStage.setResizable(false);
 		primaryStage.show();
@@ -139,30 +166,52 @@ public class Main extends Application
 	{
 		GridPane container = new GridPane();
 		container.setPadding(new Insets(20, 20, 20, 20));
+		container.setHgap(5);
+		
 		// Center entire GridPane in scene
 		container.setAlignment(Pos.CENTER);
 		
 		Color gray = Color.web(BG_COLOR);
-		container.setBackground(new Background(new BackgroundFill(gray, CornerRadii.EMPTY, Insets.EMPTY)));
-		
+		container.setBackground(new Background(new BackgroundFill(Color.web("0x333333"), CornerRadii.EMPTY, Insets.EMPTY)));
 		container.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
 		
-		Label statsLabel = new Label("Stats");
+		Label statsLabel = createRunescapeLabelText("Stats", 16, HPos.CENTER);
 		GridPane.setColumnSpan(statsLabel, 2);
-		statsLabel.setFont(Font.font(16));
-		statsLabel.setTextFill(Color.WHITE);
-		
-		GridPane.setHalignment(statsLabel, HPos.CENTER);
-		
-		LimitedTextField atkInputBox = createSkillInputBox();
-		LimitedTextField strInputBox = createSkillInputBox();
-		LimitedTextField defInputBox = createSkillInputBox();
-		LimitedTextField magInputBox = createSkillInputBox();
-		LimitedTextField rngInputBox = createSkillInputBox();
-		LimitedTextField hpInputBox = createSkillInputBox();
-		LimitedTextField prayerInputBox = createSkillInputBox();
-		
 		container.add(statsLabel, 0, 0);
+		
+		// Labels to show invisible stat levels after a prayer is selected
+		
+		Label buffedStatsLabel = createRunescapeLabelText("Buffed Stats", 16, HPos.CENTER);
+		container.add(buffedStatsLabel, 6, 0);
+		
+		Label buffedAtkLvlLabel = createRunescapeLabelText(atkLvl + "/" + atkLvl, 16, HPos.CENTER);
+		container.add(buffedAtkLvlLabel, 6, 1);
+		
+		Label buffedStrLvlLabel = createRunescapeLabelText(strLvl + "/" + strLvl, 16, HPos.CENTER);
+		container.add(buffedStrLvlLabel, 6, 2);
+		
+		Label buffedDefLvlLabel = createRunescapeLabelText(defLvl + "/" + defLvl, 16, HPos.CENTER);
+		container.add(buffedDefLvlLabel, 6, 3);
+		
+		Label buffedMagLvlLabel = createRunescapeLabelText(magLvl + "/" + magLvl, 16, HPos.CENTER);
+		container.add(buffedMagLvlLabel, 6, 4);
+		
+		Label buffedRngLvlLabel = createRunescapeLabelText(rngLvl + "/" + rngLvl, 16, HPos.CENTER);
+		container.add(buffedRngLvlLabel, 6, 5);
+		
+		String[] skillNames = {"Attack", "Strength", "Defense", "Magic", "Ranged", "Hitpoints", "Prayer"};
+			
+		for(int i = 0; i < skillNames.length; i++)
+		{
+			Label l = createRunescapeLabelText(skillNames[i], 16, HPos.LEFT);
+			container.add(l, 1, i + 1);
+		}
+		
+		ImageView statsIconView = createImageView(STATS_ICON_URL);
+		ImageView potionIconView = createImageView(POTION_ICON_URL);
+		GridPane.setHalignment(potionIconView, HPos.CENTER);
+		GridPane.setHalignment(statsIconView, HPos.CENTER);
+		
 		container.add(createImageView(ATTACK_ICON_URL), 0, 1);
 		container.add(createImageView(STRENGTH_ICON_URL), 0, 2);
 		container.add(createImageView(DEFENSE_ICON_URL), 0, 3);
@@ -170,14 +219,9 @@ public class Main extends Application
 		container.add(createImageView(RANGE_ICON_URL), 0, 5);
 		container.add(createImageView(HP_ICON_URL), 0, 6);
 		container.add(createImageView(PRAYER_ICON_URL), 0, 7);
-		container.add(atkInputBox, 1, 1);
-		container.add(strInputBox, 1, 2);
-		container.add(defInputBox, 1, 3);
-		container.add(magInputBox, 1, 4);
-		container.add(rngInputBox, 1, 5);
-		container.add(hpInputBox, 1, 6);
-		container.add(prayerInputBox, 1, 7);	
-
+		container.add(statsIconView, 2, 0);
+		container.add(potionIconView, 3, 0);	
+		
 		ComboBox<Weapon> weaponCB = createAutoCompleteComboBox(weapons);
 		ComboBox<Armor> shieldCB = createAutoCompleteComboBox(shields);
 		
@@ -191,6 +235,8 @@ public class Main extends Application
 		});
 		
 		ComboBox<Pair<AttackStyle, DamageType>> combatStyleCB = new ComboBox<>();
+		combatStyleCB.setItems(FXCollections.observableArrayList(weaponCB.getSelectionModel().getSelectedItem().usableCombatOptions));
+		combatStyleCB.getSelectionModel().selectFirst();
 		combatStyleCB.setPrefWidth(PREF_COMBOBOX_WIDTH);
 		combatStyleCB.setOnAction(e -> {
 			Pair<AttackStyle, DamageType> selected = combatStyleCB.getValue();
@@ -203,7 +249,6 @@ public class Main extends Application
 		
 		GridPane.setHalignment(combatStyleCB, HPos.CENTER);
 		
-		
 		// Do things when item is selected
 		weaponCB.setOnAction(e -> {
 			Weapon w = weaponCB.getValue();
@@ -211,8 +256,16 @@ public class Main extends Application
 			if(w != null)
 			{	
 				// Disable shields ComboBox if weapon is two handed
-				shieldCB.setValue(emptyArmor);
-				shieldCB.setDisable(w.isTwoHand);
+				if(w.isTwoHand)
+				{
+					shieldCB.setDisable(true);
+					shieldCB.getSelectionModel().selectFirst();
+				}
+				else
+				{
+					shieldCB.setDisable(false);
+				}
+
 				combatStyleCB.setItems(FXCollections.observableArrayList(w.usableCombatOptions));
 				
 				// Update current equipment set
@@ -325,50 +378,382 @@ public class Main extends Application
 			
 			if(selected != null)
 			{
-				// do stuff
+				// show enemy stats
+			}
+		});
+
+
+		// Potion ComboBoxes
+		
+		Potion raidsOverload = new Potion("Overload (raids)", Potion.Type.RAIDS_OVERLOAD);
+		
+		ComboBox<Potion> atkPotCB = new ComboBox<>();
+		atkPotCB.setPrefWidth(150);
+		atkPotCB.getItems().addAll(new Potion("None", Potion.Type.NONE), 
+								   new Potion("Attack", Potion.Type.ATTACK),
+								   new Potion("Super Attack", Potion.Type.SUPER_ATTACK),
+								   new Potion("Zamorak Brew", Potion.Type.ZAMORAK_BREW)
+								   );
+		atkPotCB.getSelectionModel().selectFirst();
+		atkPotCB.setOnAction(e -> {
+			try
+			{
+				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<Potion> strPotCB = new ComboBox<>();
+		strPotCB.setPrefWidth(150);
+		strPotCB.getItems().addAll(new Potion("None", Potion.Type.NONE),
+								   new Potion("Strength", Potion.Type.STRENGTH),
+								   new Potion("Super Strength", Potion.Type.SUPER_STRENGTH)
+								  );
+		strPotCB.getSelectionModel().selectFirst();
+		strPotCB.setOnAction(e -> {
+			try
+			{
+				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<Potion> defPotCB = new ComboBox<>();
+		defPotCB.setPrefWidth(150);
+		defPotCB.getItems().addAll(new Potion("None", Potion.Type.NONE),
+								   new Potion("Defense", Potion.Type.DEFENSE),
+								   new Potion("Super Defense", Potion.Type.SUPER_DEFENSE),
+								   new Potion("Saradmoin Brew", Potion.Type.SARADOMIN_BREW)
+								   );
+		defPotCB.getSelectionModel().selectFirst();
+		defPotCB.setOnAction(e -> {	
+			try
+			{
+				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+		});
+
+		ComboBox<Potion> magPotCB = new ComboBox<>();
+		magPotCB.setPrefWidth(150);
+		magPotCB.getItems().addAll(new Potion("None", Potion.Type.NONE),
+							       new Potion("Magic", Potion.Type.MAGIC),
+							       new Potion("Super Magic", Potion.Type.SUPER_MAGIC),
+							       new Potion("Imbued Heart", Potion.Type.IMBUED_HEART)
+							       );
+		magPotCB.getSelectionModel().selectFirst();
+		magPotCB.setOnAction(e -> {	
+			try
+			{
+				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
 			}
 		});
 		
-		int equipmentCol = 3;
+		ComboBox<Potion> rngPotCB = new ComboBox<>();
+		rngPotCB.setPrefWidth(150);
+		rngPotCB.getItems().addAll(new Potion("None", Potion.Type.NONE),
+								   new Potion("Ranging", Potion.Type.RANGING),
+								   new Potion("Super Ranging", Potion.Type.SUPER_RANGING)
+				 				  );
+		rngPotCB.getSelectionModel().selectFirst();
+		
+		rngPotCB.setOnAction(e -> {
+			try
+			{	
+				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ImageView overloadIconView = createImageView(OVERLOAD_ICON_URL);
+		GridPane.setHalignment(overloadIconView, HPos.CENTER);
+		container.add(overloadIconView, 4, 0);
+		
+		CheckBox overloadCheckBox = new CheckBox();
+		GridPane.setHalignment(overloadCheckBox, HPos.CENTER);
+		overloadCheckBox.setOnAction(e -> {
+			if(overloadCheckBox.isSelected())
+			{			
+				atkPotCB.getSelectionModel().selectFirst();
+				strPotCB.getSelectionModel().selectFirst();
+				defPotCB.getSelectionModel().selectFirst();
+				magPotCB.getSelectionModel().selectFirst();
+				rngPotCB.getSelectionModel().selectFirst();
+				
+				atkPotCB.setDisable(true);
+				strPotCB.setDisable(true);
+				defPotCB.setDisable(true);
+				magPotCB.setDisable(true);
+				rngPotCB.setDisable(true);
+				
+				atkPotionBonus = raidsOverload.calculateBonus(atkLvl);
+				strPotionBonus = raidsOverload.calculateBonus(strLvl);
+				defPotionBonus = raidsOverload.calculateBonus(defLvl);
+				magPotionBonus = raidsOverload.calculateBonus(magLvl);
+				rngPotionBonus = raidsOverload.calculateBonus(rngLvl);
+				
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+			else
+			{
+				atkPotCB.setDisable(false);
+				strPotCB.setDisable(false);
+				defPotCB.setDisable(false);
+				magPotCB.setDisable(false);
+				rngPotCB.setDisable(false);
+				
+				atkPotionBonus = 0;
+				strPotionBonus = 0;
+				defPotionBonus = 0;
+				magPotionBonus = 0;
+				rngPotionBonus = 0;
+				
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+		});
+		container.add(overloadCheckBox, 4, 1);
+		
+		ImageView prayerIcon = createImageView(PRAYER_ICON_URL);
+		GridPane.setHalignment(prayerIcon, HPos.CENTER);
+		container.add(prayerIcon, 5, 0);
+		
+		ComboBox<String> prayerCB = createStringComboBox(new String[] {"None", "Chivalry", "Piety", "Rigour", "Augury", "5%", "10%", "15%"});
+		container.add(prayerCB, 5, 1);
+		prayerCB.setOnAction(e ->  {
+			
+			String selected = prayerCB.getValue();
+			
+			try
+			{
+				switch(selected)
+				{
+				case "None":
+					atkPrayerBonus = 0.0f;
+					strPrayerBonus = 0.0f;
+					defPrayerBonus = 0.0f;
+					magPrayerBonus = 0.0f;
+					magDefenseBonus = 0.25f;
+					rngPrayerBonus = 0.0f;
+					rngStrengthBonus = 0.0f;
+					break;
+					
+				case "Chivalry":
+					atkPrayerBonus = 0.15f;
+					strPrayerBonus = 0.18f;
+					defPrayerBonus = 0.20f;
+					magPrayerBonus = 0.0f;
+					magDefenseBonus = 0.25f;
+					rngPrayerBonus = 0.0f;
+					rngStrengthBonus = 0.0f;
+					break;
+					
+				case "Piety":
+					atkPrayerBonus = 0.20f;
+					strPrayerBonus = 0.23f;
+					defPrayerBonus = 0.25f;
+					magPrayerBonus = 0.0f;
+					magDefenseBonus = 0.25f;
+					rngPrayerBonus = 0.0f;
+					rngStrengthBonus = 0.0f;
+					break;
+					
+				case "Rigour":
+					atkPrayerBonus = 0.0f;
+					strPrayerBonus = 0.0f;
+					defPrayerBonus = 0.25f;
+					magPrayerBonus = 0.0f;
+					magDefenseBonus = 0.25f;
+					rngPrayerBonus = 0.20f;
+					rngStrengthBonus = 0.23f;
+					break;
+					
+				case "Augury":
+					atkPrayerBonus = 0.0f;
+					strPrayerBonus = 0.0f;
+					defPrayerBonus = 0.25f;
+					magPrayerBonus = 0.25f;
+					magDefenseBonus = 0.25f;
+					rngPrayerBonus = 0.0f;
+					rngStrengthBonus = 0.0f;
+					break;
+					
+				}
+				
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		container.add(atkPotCB, 3, 1);
+		container.add(strPotCB, 3, 2);
+		container.add(defPotCB, 3, 3);
+		container.add(magPotCB, 3, 4);
+		container.add(rngPotCB, 3, 5);
+		
+		LimitedTextField atkInputBox = createSkillInputBox();
+		atkInputBox.textProperty().addListener((observable, oldValue, newValue) -> {
+			
+			String text = atkInputBox.getText();
+			
+			if(text != null && !text.equals("") && atkPotCB.getValue() != null)
+			{
+				atkLvl = Integer.parseInt(text);
+				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+			}
+		});
+		atkInputBox.setIntegersOnly(true);
+		atkInputBox.setText("99");
+		
+		LimitedTextField strInputBox = createSkillInputBox();
+		strInputBox.textProperty().addListener((observable, oldValue, newValue) -> {
+			String text = strInputBox.getText();
+			
+			if(text != null && ! text.equals(""))
+			{
+				strLvl = Integer.parseInt(text);
+				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+			}
+		});
+		strInputBox.setIntegersOnly(true);
+		strInputBox.setText("99");
+		
+		LimitedTextField defInputBox = createSkillInputBox();
+		defInputBox.textProperty().addListener((observable, oldValue, newValue) -> {
+			String text = defInputBox.getText();
+			
+			if(text != null && ! text.equals(""))
+			{
+				defLvl = Integer.parseInt(text);
+				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+			}
+		});
+		defInputBox.setIntegersOnly(true);
+		defInputBox.setText("99");
+		
+		LimitedTextField magInputBox = createSkillInputBox();
+		magInputBox.textProperty().addListener((observable, oldValue, newValue) -> {
+			String text = magInputBox.getText();
+			
+			if(text != null && ! text.equals(""))
+			{
+				magLvl = Integer.parseInt(text);
+				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+			}
+		});
+		magInputBox.setIntegersOnly(true);
+		magInputBox.setText("99");
+		
+		LimitedTextField rngInputBox = createSkillInputBox();
+		rngInputBox.textProperty().addListener((observable, oldValue, newValue) -> {
+			String text = rngInputBox.getText();
+			
+			if(text != null && ! text.equals(""))
+			{
+				rngLvl = Integer.parseInt(text);
+				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+		});
+		rngInputBox.setIntegersOnly(true);
+		rngInputBox.setText("99");
+		
+		LimitedTextField hpInputBox = createSkillInputBox();
+		hpInputBox.setIntegersOnly(true);
+		hpInputBox.setText("99");
+		
+		LimitedTextField prayerInputBox = createSkillInputBox();
+		prayerInputBox.setIntegersOnly(true);
+		prayerInputBox.setText("99");
+		
+		container.add(atkInputBox, 2, 1);
+		container.add(strInputBox, 2, 2);
+		container.add(defInputBox, 2, 3);
+		container.add(magInputBox, 2, 4);
+		container.add(rngInputBox, 2, 5);
+		container.add(hpInputBox, 2, 6);
+		container.add(prayerInputBox, 2, 7);
+
+		
+		int equipmentCol = 8;
 		// Add equipment labels to the GridPane
 		for(int i = 0; i < comboBoxLabels.size(); i++)
 		{
-			comboBoxLabels.get(i).setTextFill(Color.WHITE);
-			comboBoxLabels.get(i).setFont(Font.font(14));
+			comboBoxLabels.get(i).setTextFill(Color.YELLOW);
+			comboBoxLabels.get(i).setFont(Font.font("Runescape UF", 18));
 			GridPane.setHalignment(comboBoxLabels.get(i), HPos.RIGHT);
-			container.add(comboBoxLabels.get(i), equipmentCol - 1, i);
+			container.add(comboBoxLabels.get(i), equipmentCol - 1, i + 1);
 		}
 		
-		
 		// Add ComboBoxes to the equipment pane
-		container.add(weaponCB, equipmentCol, 0);
-		container.add(combatStyleCB, equipmentCol, 1);
-		container.add(ammoCB, equipmentCol, 3);
-		container.add(headCB, equipmentCol, 4);
-		container.add(capeCB, equipmentCol, 5);
-		container.add(amuletCB, equipmentCol, 6);
-		container.add(chestCB, equipmentCol, 7);
-		container.add(legCB, equipmentCol, 8);
-		container.add(shieldCB, equipmentCol, 9);
-		container.add(gloveCB, equipmentCol, 10);
-		container.add(bootCB, equipmentCol, 11);
-		container.add(ringCB, equipmentCol, 12);
+		container.add(weaponCB, equipmentCol, 1);
+		container.add(combatStyleCB, equipmentCol, 2);
+		container.add(ammoCB, equipmentCol, 4);
+		container.add(headCB, equipmentCol, 5);
+		container.add(capeCB, equipmentCol, 6);
+		container.add(amuletCB, equipmentCol, 7);
+		container.add(chestCB, equipmentCol, 8);
+		container.add(legCB, equipmentCol, 9);
+		container.add(shieldCB, equipmentCol, 10);
+		container.add(gloveCB, equipmentCol, 11);
+		container.add(bootCB, equipmentCol, 12);
+		container.add(ringCB, equipmentCol, 13);
 		
 		// Make each column a percentage of the window width
-		ColumnConstraints col1, col2, col3, col4, col5, col6;
-		col1 = new ColumnConstraints();
-		col2 = new ColumnConstraints();
-		col3 = new ColumnConstraints();
-		col4 = new ColumnConstraints();
-		col5 = new ColumnConstraints();
-		col6 = new ColumnConstraints();
-		col1.setPercentWidth(2);
-		col2.setPercentWidth(3);
-		col3.setPercentWidth(6);
-		col4.setPercentWidth(20);
-		col5.setPercentWidth(20);
-		col6.setPercentWidth(20);
-		container.getColumnConstraints().addAll(col1, col2, col3, col4, col5);
+		double[] columnPercentages = new double[] {2.5, 6, 2.75, 9, 2.75, 7, 7, 8, 20, 8, 20};
+		ColumnConstraints[] colConstraints = new ColumnConstraints[columnPercentages.length];
+		
+		for(int i = 0; i < colConstraints.length; i++)
+		{
+			colConstraints[i] = new ColumnConstraints();
+			colConstraints[i].setPercentWidth(columnPercentages[i]);
+		}
+		
+		container.getColumnConstraints().addAll(colConstraints);
+		
 		
 		Label enemyLabel = new Label("Enemy");
 		enemyLabel.setAlignment(Pos.CENTER);
@@ -378,86 +763,19 @@ public class Main extends Application
 		GridPane.setHalignment(enemyLabel, HPos.CENTER);
 		
 		/*** DEBUG ONLY REMOVE LATER ***/
-		//container.setGridLinesVisible(true);
+		container.setGridLinesVisible(true);
 		
 		container.add(enemyLabel, equipmentCol + 1, 0);
 		container.add(enemyCB, equipmentCol + 2, 0);
 		
-		Button calculateButton = new Button("Calculate DPS");
+		Button calculateButton = new Button("Calculate");
 		
 		Alert errorBox = new Alert(AlertType.ERROR);
 		errorBox.setHeaderText(null);
 		
-		
-		
 		calculateButton.setOnAction(e -> {
-			String statBoxErrorMsg = "Make sure the stat boxes only have integers";
 			try
 			{
-				
-				if(isNumeric(atkInputBox.getText()))
-				{
-					atkLvl = Integer.parseInt(atkInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-				
-				if(isNumeric(strInputBox.getText()))
-				{
-					strLvl = Integer.parseInt(strInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-				
-				if(isNumeric(defInputBox.getText()))
-				{
-					defLvl = Integer.parseInt(defInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-					
-				if(isNumeric(magInputBox.getText()))
-				{
-					magLvl = Integer.parseInt(magInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-				
-				if(isNumeric(rngInputBox.getText()))
-				{
-					rngLvl = Integer.parseInt(rngInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-				
-				if(isNumeric(hpInputBox.getText()))
-				{
-					hpLvl = Integer.parseInt(hpInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-				
-				if(isNumeric(prayerInputBox.getText()))
-				{
-					prayerLvl = Integer.parseInt(prayerInputBox.getText());
-				}
-				else
-				{
-					throw new IllegalArgumentException(statBoxErrorMsg);
-				}
-						
 				if(weaponCB.getValue() != null)
 				{
 					currentSet.setWeapon(weaponCB.getValue());
@@ -532,11 +850,9 @@ public class Main extends Application
 				
 				if(shieldCB.getValue() != null)
 				{
+					// Even if the weapon is 2H, the shieldCB box is guaranteed to be
+					// set to 'None'
 					currentSet.setShield(shieldCB.getValue());
-				}
-				else if(weaponCB.getValue().isTwoHand)
-				{
-					currentSet.setShield(emptyArmor);
 				}
 				else
 				{
@@ -581,7 +897,7 @@ public class Main extends Application
 		
 		GridPane.setHalignment(calculateButton, HPos.CENTER);
 		
-		container.add(calculateButton, 4, 12);
+		container.add(calculateButton, 10, 12);
 		
 		return container;
 	}
@@ -610,8 +926,7 @@ public class Main extends Application
 		}
 		
 	}
-	
-	
+		
 	private static void initItems()
 	{		
 		List<List<String>> itemData = readFile("res/data/" + WEAPONS_FILE);
@@ -653,18 +968,8 @@ public class Main extends Application
 		initArmorList(gloves, GLOVES_FILE);
 		initArmorList(boots, BOOTS_FILE);
 		initArmorList(rings, RINGS_FILE);
-		
-		for(Armor a : shields)
-		{
-			if(a.name.equalsIgnoreCase("none"))
-			{
-				emptyArmor = a;
-				break;
-			}
-		}
 	}
-	
-	
+		
 	private static void initEnemies()
 	{
 		List<List<String>> data = readFile("res/data/" + ENEMIES_FILE);
@@ -677,7 +982,6 @@ public class Main extends Application
 		}
 	}
 	
-	
 	private static void initArmorList(List<Armor> input, String filename)
 	{
 		List<List<String>> itemData = readFile("res/data/" + filename);
@@ -688,20 +992,19 @@ public class Main extends Application
 		}
 	}
 	
-	
 	private static <E> ComboBox<E> createAutoCompleteComboBox(List<E> items)
 	{
 		ComboBox<E> cb = new ComboBox<>();
 		cb.setTooltip(new Tooltip());
 		cb.getItems().addAll(items);
 		cb.setPrefWidth(PREF_COMBOBOX_WIDTH);
+		cb.getSelectionModel().selectFirst();
 		GridPane.setHalignment(cb, HPos.CENTER);
 		new ComboBoxAutoComplete<>(cb);
 		
 		return cb;
 	}
 
-	
 	private static LimitedTextField createSkillInputBox()
 	{
 		LimitedTextField ltf = new LimitedTextField();		
@@ -711,10 +1014,40 @@ public class Main extends Application
 		return ltf;
 	}
 	
+	private static ComboBox<String> createStringComboBox(String[] elements)
+	{
+		ComboBox<String> cb = new ComboBox<>();
+		cb.getItems().addAll(elements);
+		cb.getSelectionModel().selectFirst();
+		
+		return cb;
+	}
+	
 	private static ImageView createImageView(String url)
 	{
 		return new ImageView(new Image(new File(url).toURI().toString()));
 	}
+
+	private static Label createRunescapeLabelText(String text, double fontSize)
+	{
+		Label rsLabel = new Label(text);
+		rsLabel.setFont(Font.font("Runescape UF", fontSize));
+		rsLabel.setTextFill(Color.YELLOW);
+		
+		return rsLabel;
+	}
+	
+	private static Label createRunescapeLabelText(String text, double fontSize, HPos alignment)
+	{
+		Label rsLabel = new Label(text);
+		rsLabel.setFont(Font.font("Runescape UF", fontSize));
+		rsLabel.setTextFill(Color.YELLOW);
+		GridPane.setHalignment(rsLabel, alignment);
+		
+		return rsLabel;
+	}
+	
+	
 	
 	// Main & Utility Functions
 	
@@ -771,7 +1104,7 @@ public class Main extends Application
 		
 		try
 		{
-			Integer i = Integer.parseInt(str);
+			Integer.parseInt(str);
 		}
 		catch(NumberFormatException e)
 		{
@@ -780,6 +1113,5 @@ public class Main extends Application
 		
 		return true;
 	}
-	
 
 }

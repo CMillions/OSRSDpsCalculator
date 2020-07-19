@@ -1,5 +1,4 @@
 NPC,Location,Exp bonus,Combat level,Hitpoints,Attack level,Strength level,Defence level,Magic level,Ranged level,Main attack style,Attack speed,Stab attack,Slash attack,Crush attack,Attack bonus,Melee strength,Magic attack,Magic strength,Ranged attack,Ranged strength,Stab defence,Slash defence,Crush defence,Magic defence,Ranged defence,Interval (s),Type
-Custom NPC,,0,96,90,1,1,90,105,1,magic,4,0,0,0,0,0,0,,0,0,20,20,20,0,15,,undead
 Aberrant spectre,,0,124,150,97,67,135,1,1,stab,4,0,0,0,0,0,0,,0,0,20,20,20,0,20,,demon
 Abyssal demon,,0.125,350,400,180,136,250,200,1,,,0,0,0,65,0,0,,0,,40,60,50,20,60,,demon
 Abyssal sire (first three phases),,0.1,350,400,180,136,250,200,1,,,0,0,0,65,0,0,,0,,20,30,25,-40,30,,demon
