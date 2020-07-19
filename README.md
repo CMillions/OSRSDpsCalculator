@@ -9,4 +9,3 @@ Compiled using Eclipse 2020-03 with JavaSE 11
 Also uses JavaFX SKD 11.0.2
 
 [Debug Screenshot](https://gyazo.com/0474d5887b08171a319888c124198862)
-https://i.gyazo.com/0474d5887b08171a319888c124198862.png
