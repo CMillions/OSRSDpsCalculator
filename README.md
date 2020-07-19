@@ -7,3 +7,6 @@ Based on Bitterkoekje's Google Sheets DPS calculator found here:
 Compiled using Eclipse 2020-03 with JavaSE 11
 
 Also uses JavaFX SKD 11.0.2
+
+Debug Screenshots
+[!alt text](https://gyazo.com/0474d5887b08171a319888c124198862)
