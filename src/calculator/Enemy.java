@@ -86,7 +86,7 @@ public class Enemy
 		crushDef = Integer.parseInt(list.get(23));
 		magDef = Integer.parseInt(list.get(24));
 		rngDef = Integer.parseInt(list.get(25));
-		
+
 		switch(list.get(26).toLowerCase())
 		{
 			case "demon":

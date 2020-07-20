@@ -49,11 +49,11 @@ import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Pair;
-import potion.Potion;
 import utils.ComboBoxAutoComplete;
 import utils.LimitedTextField;
 
@@ -86,6 +86,13 @@ public class Main extends Application
 	final static String STATS_ICON_URL    = "res/images/stats_icon.png";
 	final static String POTION_ICON_URL	  = "res/images/potion_icon.png";
 	final static String OVERLOAD_ICON_URL = "res/images/raids_overload_icon.png";
+	final static String MULTI_PRAYER_ICON_URL = "res/images/multi_prayer_icons.png";
+	
+	final static String STAB_DEFENSE_ICON_URL = "res/images/stab_defense_icon.png";
+	final static String SLASH_DEFENSE_ICON_URL = "res/images/slash_defense_icon.png";
+	final static String CRUSH_DEFENSE_ICON_URL = "res/images/crush_defense_icon.png";
+	final static String MAGIC_DEFENSE_ICON_URL = "res/images/magic_defense_icon.png";
+	final static String RANGE_DEFENSE_ICON_URL = "res/images/range_defense_icon.png";
 	
 	// JavaFX Constants
 	final static int PREF_COMBOBOX_WIDTH = 200;
@@ -171,13 +178,12 @@ public class Main extends Application
 		// Center entire GridPane in scene
 		container.setAlignment(Pos.CENTER);
 		
-		Color gray = Color.web(BG_COLOR);
-		container.setBackground(new Background(new BackgroundFill(Color.web("0x333333"), CornerRadii.EMPTY, Insets.EMPTY)));
+		Color gray = Color.web("0x333333");
+		container.setBackground(new Background(new BackgroundFill(gray, CornerRadii.EMPTY, Insets.EMPTY)));
 		container.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
 		
 		Label statsLabel = createRunescapeLabelText("Stats", 16, HPos.CENTER);
-		GridPane.setColumnSpan(statsLabel, 2);
-		container.add(statsLabel, 0, 0);
+		container.add(statsLabel, 1, 0);
 		
 		// Labels to show invisible stat levels after a prayer is selected
 		
@@ -207,20 +213,62 @@ public class Main extends Application
 			container.add(l, 1, i + 1);
 		}
 		
-		ImageView statsIconView = createImageView(STATS_ICON_URL);
-		ImageView potionIconView = createImageView(POTION_ICON_URL);
-		GridPane.setHalignment(potionIconView, HPos.CENTER);
-		GridPane.setHalignment(statsIconView, HPos.CENTER);
+		// Player stats images
+      
+		container.add(createImageView(ATTACK_ICON_URL, HPos.CENTER), 0, 1);
+		container.add(createImageView(STRENGTH_ICON_URL, HPos.CENTER), 0, 2);
+		container.add(createImageView(DEFENSE_ICON_URL, HPos.CENTER), 0, 3);
+		container.add(createImageView(MAGIC_ICON_URL, HPos.CENTER), 0, 4);
+		container.add(createImageView(RANGE_ICON_URL, HPos.CENTER), 0, 5);
+		container.add(createImageView(HP_ICON_URL, HPos.CENTER), 0, 6);
+		container.add(createImageView(PRAYER_ICON_URL, HPos.CENTER), 0, 7);
+		container.add(createImageView(STATS_ICON_URL, HPos.CENTER), 2, 0);
+		container.add(createImageView(POTION_ICON_URL, HPos.CENTER), 3, 0);	
 		
-		container.add(createImageView(ATTACK_ICON_URL), 0, 1);
-		container.add(createImageView(STRENGTH_ICON_URL), 0, 2);
-		container.add(createImageView(DEFENSE_ICON_URL), 0, 3);
-		container.add(createImageView(MAGIC_ICON_URL), 0, 4);
-		container.add(createImageView(RANGE_ICON_URL), 0, 5);
-		container.add(createImageView(HP_ICON_URL), 0, 6);
-		container.add(createImageView(PRAYER_ICON_URL), 0, 7);
-		container.add(statsIconView, 2, 0);
-		container.add(potionIconView, 3, 0);	
+		// Showing monster stats
+		Label monsterStatsLabel = createRunescapeLabelText("Monster Stats", 16, HPos.CENTER);
+        GridPane.setColumnSpan(monsterStatsLabel, 4);
+        container.add(monsterStatsLabel, 11, 0);
+        container.add(createImageView(ATTACK_ICON_URL, HPos.CENTER), 11, 1);
+        container.add(createImageView(STRENGTH_ICON_URL, HPos.CENTER), 11, 2);
+        container.add(createImageView(DEFENSE_ICON_URL, HPos.CENTER), 11, 3);
+        container.add(createImageView(MAGIC_ICON_URL, HPos.CENTER), 11, 4);
+        container.add(createImageView(RANGE_ICON_URL, HPos.CENTER), 11, 5);
+        container.add(createImageView(HP_ICON_URL, HPos.CENTER), 11, 6);
+		
+        // spaghetti code so labels can show monster stats on startup
+        ComboBox<Enemy> enemyCB = createAutoCompleteComboBox(enemies);
+		enemyCB.getSelectionModel().selectFirst();
+        
+        Label monsterAtk = createRunescapeLabelText(enemyCB.getValue().atkLvl + "", 16, HPos.CENTER);
+        container.add(monsterAtk, 12, 1);
+        Label monsterStr = createRunescapeLabelText(enemyCB.getValue().strLvl + "", 16, HPos.CENTER);
+        container.add(monsterStr, 12, 2);
+        Label monsterDef = createRunescapeLabelText(enemyCB.getValue().defLvl + "", 16, HPos.CENTER);
+        container.add(monsterDef, 12, 3);
+        Label monsterMag = createRunescapeLabelText(enemyCB.getValue().magLvl + "", 16, HPos.CENTER);
+        container.add(monsterMag, 12, 4);
+        Label monsterRng = createRunescapeLabelText(enemyCB.getValue().rngLvl + "", 16, HPos.CENTER);
+        container.add(monsterRng, 12, 5);
+        Label monsterHP = createRunescapeLabelText(enemyCB.getValue().hitpoints + "", 16, HPos.CENTER);
+        container.add(monsterHP, 12, 6);
+        
+        container.add(createImageView(STAB_DEFENSE_ICON_URL,  HPos.CENTER), 13, 1);
+        container.add(createImageView(SLASH_DEFENSE_ICON_URL, HPos.CENTER), 13, 2);
+        container.add(createImageView(CRUSH_DEFENSE_ICON_URL, HPos.CENTER), 13, 3);
+        container.add(createImageView(MAGIC_DEFENSE_ICON_URL, HPos.CENTER), 13, 4);
+        container.add(createImageView(RANGE_DEFENSE_ICON_URL, HPos.CENTER), 13, 5);
+        
+        Label monsterStabDef = createRunescapeLabelText(enemyCB.getValue().stabDef + "", 16, HPos.CENTER);
+        container.add(monsterStabDef, 14, 1);
+        Label monsterSlashDef = createRunescapeLabelText(enemyCB.getValue().slashDef + "", 16, HPos.CENTER);
+        container.add(monsterSlashDef, 14, 2);
+        Label monsterCrushDef = createRunescapeLabelText(enemyCB.getValue().crushDef + "", 16, HPos.CENTER);
+        container.add(monsterCrushDef, 14, 3);
+        Label monsterMagDef = createRunescapeLabelText(enemyCB.getValue().magDef + "", 16, HPos.CENTER);
+        container.add(monsterMagDef, 14, 4);
+        Label monsterRngDef = createRunescapeLabelText(enemyCB.getValue().rngDef + "", 16, HPos.CENTER);
+        container.add(monsterRngDef, 14, 5);
 		
 		ComboBox<Weapon> weaponCB = createAutoCompleteComboBox(weapons);
 		ComboBox<Armor> shieldCB = createAutoCompleteComboBox(shields);
@@ -372,13 +420,24 @@ public class Main extends Application
 			}
 		});
 		
-		ComboBox<Enemy> enemyCB = createAutoCompleteComboBox(enemies);
+		
 		enemyCB.setOnAction(e -> {
 			Enemy selected = enemyCB.getValue();
 			
 			if(selected != null)
-			{
-				// show enemy stats
+			{				
+				monsterAtk.setText(selected.atkLvl + "");
+				monsterStr.setText(selected.strLvl + "");
+				monsterDef.setText(selected.defLvl + "");
+				monsterMag.setText(selected.magLvl + "");
+				monsterRng.setText(selected.rngLvl + "");
+				monsterHP.setText(selected.hitpoints + "");
+				
+				monsterStabDef.setText(selected.stabDef + "");
+				monsterSlashDef.setText(selected.slashDef + "");
+				monsterCrushDef.setText(selected.crushDef + "");
+				monsterMagDef.setText(selected.magDef + "");
+				monsterRngDef.setText(selected.rngDef + "");
 			}
 		});
 
@@ -549,69 +608,256 @@ public class Main extends Application
 		GridPane.setHalignment(prayerIcon, HPos.CENTER);
 		container.add(prayerIcon, 5, 0);
 		
-		ComboBox<String> prayerCB = createStringComboBox(new String[] {"None", "Chivalry", "Piety", "Rigour", "Augury", "5%", "10%", "15%"});
-		container.add(prayerCB, 5, 1);
-		prayerCB.setOnAction(e ->  {
+		ComboBox<String> atkPrayerCB = new ComboBox<String>();
+		GridPane.setHalignment(atkPrayerCB, HPos.CENTER);
+		atkPrayerCB.setPrefWidth(125);
+		atkPrayerCB.getItems().addAll("None", "5%", "10%", "15%");
+		atkPrayerCB.getSelectionModel().selectFirst();
+		container.add(atkPrayerCB, 5, 1);
+		atkPrayerCB.setOnAction(e ->  {
 			
-			String selected = prayerCB.getValue();
+			String selected = atkPrayerCB.getValue();
 			
 			try
 			{
-				switch(selected)
+				if(!selected.equals("None"))
 				{
-				case "None":
+					String partial = selected.replaceAll("[^0-9]", "");
+					atkPrayerBonus = Float.parseFloat(partial) / 100.f;
+				}
+				else
+				{
+					atkPrayerBonus = 0.0f;
+				}
+				
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);	
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<String> strPrayerCB = new ComboBox<>();
+		GridPane.setHalignment(strPrayerCB, HPos.CENTER);
+		strPrayerCB.setPrefWidth(125);
+		strPrayerCB.getItems().addAll("None", "5%", "10%", "15%");
+		strPrayerCB.getSelectionModel().selectFirst();
+		container.add(strPrayerCB, 5, 2);
+		strPrayerCB.setOnAction(e -> {
+			
+			String selected = strPrayerCB.getValue();
+			
+			try
+			{
+				if(!selected.equals("None"))
+				{
+					String partial = selected.replaceAll("[^0-9]", "");
+					strPrayerBonus = Float.parseFloat(partial) / 100.f;
+				}
+				else
+				{
+					strPrayerBonus = 0.0f;
+				}
+				
+				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<String> defPrayerCB = new ComboBox<>();
+		GridPane.setHalignment(defPrayerCB, HPos.CENTER);
+		defPrayerCB.setPrefWidth(125);
+		defPrayerCB.getItems().addAll("None", "5%", "10%", "15%");
+		defPrayerCB.getSelectionModel().selectFirst();
+		container.add(defPrayerCB, 5, 3);
+		defPrayerCB.setOnAction(e -> {
+			
+			String selected = defPrayerCB.getValue();
+			
+			try
+			{
+				if(!selected.equals("None"))
+				{
+					String partial = selected.replaceAll("[^0-9]", "");
+					defPrayerBonus = Float.parseFloat(partial) / 100.f;
+				}
+				else
+				{
+					defPrayerBonus = 0.0f;
+				}
+				
+				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<String> magPrayerCB = new ComboBox<>();
+		GridPane.setHalignment(magPrayerCB, HPos.CENTER);
+		magPrayerCB.setPrefWidth(125);
+		magPrayerCB.getItems().addAll("None", "5%", "10%", "15%");
+		magPrayerCB.getSelectionModel().selectFirst();
+		container.add(magPrayerCB, 5, 4);
+		magPrayerCB.setOnAction(e -> {
+			
+			String selected = magPrayerCB.getValue();
+			
+			try
+			{
+				if(!selected.equals("None"))
+				{
+					String partial = selected.replaceAll("[^0-9]", "");
+					magPrayerBonus = magDefenseBonus = Float.parseFloat(partial) / 100.f;
+				}
+				else
+				{
+					magPrayerBonus = 0.f;
+					magDefenseBonus = 0.f;
+				}
+				
+				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+		});
+		
+		ComboBox<String> rngPrayerCB = new ComboBox<>();
+		GridPane.setHalignment(rngPrayerCB, HPos.CENTER);
+		rngPrayerCB.setPrefWidth(125);
+		rngPrayerCB.getItems().addAll("None", "5%", "10%", "15%");
+		rngPrayerCB.getSelectionModel().selectFirst();
+		container.add(rngPrayerCB, 5, 5);
+		rngPrayerCB.setOnAction(e -> {
+			
+			String selected = rngPrayerCB.getValue();
+			
+			try
+			{
+				if(!selected.equals("None"))
+				{
+					String partial = selected.replaceAll("[^0-9]", "");
+					rngPrayerBonus = rngStrengthBonus = Float.parseFloat(partial) / 100.f;
+				}
+				else
+				{
+					rngPrayerBonus = 0.0f;
+					rngStrengthBonus = 0.0f;
+				}
+				
+				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+		});
+		
+		ImageView multiPrayerIcons = createImageView(MULTI_PRAYER_ICON_URL);
+		GridPane.setHalignment(multiPrayerIcons, HPos.CENTER);
+		container.add(multiPrayerIcons, 5, 6);
+		
+		ComboBox<String> multiStatPrayerCB = new ComboBox<>();
+		GridPane.setHalignment(multiStatPrayerCB, HPos.CENTER);
+		multiStatPrayerCB.setPrefWidth(125);
+		multiStatPrayerCB.getItems().addAll("None", "Chivalry", "Piety", "Rigour", "Augury");
+		multiStatPrayerCB.getSelectionModel().selectFirst();
+		container.add(multiStatPrayerCB, 5, 7);
+		
+		multiStatPrayerCB.setOnAction(e -> {
+			
+			String selected = multiStatPrayerCB.getValue();
+			
+			try
+			{
+				if(!selected.equals("None"))
+				{
+					atkPrayerCB.getSelectionModel().selectFirst();
+					strPrayerCB.getSelectionModel().selectFirst();
+					defPrayerCB.getSelectionModel().selectFirst();
+					magPrayerCB.getSelectionModel().selectFirst();
+					rngPrayerCB.getSelectionModel().selectFirst();
+					
+					atkPrayerCB.setDisable(true);
+					strPrayerCB.setDisable(true);
+					defPrayerCB.setDisable(true);
+					magPrayerCB.setDisable(true);
+					rngPrayerCB.setDisable(true);
+					
+					switch(selected)
+					{
+					case "Chivalry":
+						atkPrayerBonus = 0.15f;
+						strPrayerBonus = 0.18f;
+						defPrayerBonus = 0.20f;
+						magPrayerBonus = 0.0f;
+						magDefenseBonus = 0.0f;
+						rngPrayerBonus = 0.0f;
+						rngStrengthBonus = 0.0f;
+						break;
+						
+					case "Piety":
+						atkPrayerBonus = 0.20f;
+						strPrayerBonus = 0.23f;
+						defPrayerBonus = 0.25f;
+						magPrayerBonus = 0.0f;
+						magDefenseBonus = 0.0f;
+						rngPrayerBonus = 0.0f;
+						rngStrengthBonus = 0.0f;
+						break;
+						
+					case "Rigour":
+						atkPrayerBonus = 0.0f;
+						strPrayerBonus = 0.0f;
+						defPrayerBonus = 0.25f;
+						magPrayerBonus = 0.0f;
+						magDefenseBonus = 0.0f;
+						rngPrayerBonus = 0.20f;
+						rngStrengthBonus = 0.23f;
+						break;
+						
+					case "Augury":
+						atkPrayerBonus = 0.0f;
+						strPrayerBonus = 0.0f;
+						defPrayerBonus = 0.25f;
+						magPrayerBonus = 0.25f;
+						magDefenseBonus = 0.25f;
+						rngPrayerBonus = 0.0f;
+						rngStrengthBonus = 0.0f;
+						break;
+						
+					}
+				}
+				else
+				{
+					atkPrayerCB.setDisable(false);
+					strPrayerCB.setDisable(false);
+					defPrayerCB.setDisable(false);
+					magPrayerCB.setDisable(false);
+					rngPrayerCB.setDisable(false);
+					
 					atkPrayerBonus = 0.0f;
 					strPrayerBonus = 0.0f;
 					defPrayerBonus = 0.0f;
 					magPrayerBonus = 0.0f;
-					magDefenseBonus = 0.25f;
+					magDefenseBonus = 0.0f;
 					rngPrayerBonus = 0.0f;
 					rngStrengthBonus = 0.0f;
-					break;
-					
-				case "Chivalry":
-					atkPrayerBonus = 0.15f;
-					strPrayerBonus = 0.18f;
-					defPrayerBonus = 0.20f;
-					magPrayerBonus = 0.0f;
-					magDefenseBonus = 0.25f;
-					rngPrayerBonus = 0.0f;
-					rngStrengthBonus = 0.0f;
-					break;
-					
-				case "Piety":
-					atkPrayerBonus = 0.20f;
-					strPrayerBonus = 0.23f;
-					defPrayerBonus = 0.25f;
-					magPrayerBonus = 0.0f;
-					magDefenseBonus = 0.25f;
-					rngPrayerBonus = 0.0f;
-					rngStrengthBonus = 0.0f;
-					break;
-					
-				case "Rigour":
-					atkPrayerBonus = 0.0f;
-					strPrayerBonus = 0.0f;
-					defPrayerBonus = 0.25f;
-					magPrayerBonus = 0.0f;
-					magDefenseBonus = 0.25f;
-					rngPrayerBonus = 0.20f;
-					rngStrengthBonus = 0.23f;
-					break;
-					
-				case "Augury":
-					atkPrayerBonus = 0.0f;
-					strPrayerBonus = 0.0f;
-					defPrayerBonus = 0.25f;
-					magPrayerBonus = 0.25f;
-					magDefenseBonus = 0.25f;
-					rngPrayerBonus = 0.0f;
-					rngStrengthBonus = 0.0f;
-					break;
-					
 				}
 				
-				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				
+				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);	
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
@@ -743,7 +989,7 @@ public class Main extends Application
 		container.add(ringCB, equipmentCol, 13);
 		
 		// Make each column a percentage of the window width
-		double[] columnPercentages = new double[] {2.5, 6, 2.75, 9, 2.75, 7, 7, 8, 20, 8, 20};
+		double[] columnPercentages = new double[] {2.5, 6, 2.75, 9, 2.75, 7, 7, 8, 15, 5, 15, 2.5, 6, 2.5, 6};
 		ColumnConstraints[] colConstraints = new ColumnConstraints[columnPercentages.length];
 		
 		for(int i = 0; i < colConstraints.length; i++)
@@ -755,18 +1001,14 @@ public class Main extends Application
 		container.getColumnConstraints().addAll(colConstraints);
 		
 		
-		Label enemyLabel = new Label("Enemy");
-		enemyLabel.setAlignment(Pos.CENTER);
-		enemyLabel.setTextFill(Color.WHITE);
-		enemyLabel.setPadding(new Insets(10, 10, 10, 10));
 		
-		GridPane.setHalignment(enemyLabel, HPos.CENTER);
 		
 		/*** DEBUG ONLY REMOVE LATER ***/
-		container.setGridLinesVisible(true);
+		//container.setGridLinesVisible(true);
 		
-		container.add(enemyLabel, equipmentCol + 1, 0);
-		container.add(enemyCB, equipmentCol + 2, 0);
+		Label enemyLabel = createRunescapeLabelText("Enemy", 16, HPos.CENTER);
+		container.add(enemyLabel, equipmentCol + 1, 1);
+		container.add(enemyCB, equipmentCol + 2, 1);
 		
 		Button calculateButton = new Button("Calculate");
 		
@@ -896,7 +1138,6 @@ public class Main extends Application
 		});
 		
 		GridPane.setHalignment(calculateButton, HPos.CENTER);
-		
 		container.add(calculateButton, 10, 12);
 		
 		return container;
@@ -1014,6 +1255,7 @@ public class Main extends Application
 		return ltf;
 	}
 	
+	@SuppressWarnings("unused")
 	private static ComboBox<String> createStringComboBox(String[] elements)
 	{
 		ComboBox<String> cb = new ComboBox<>();
@@ -1027,7 +1269,15 @@ public class Main extends Application
 	{
 		return new ImageView(new Image(new File(url).toURI().toString()));
 	}
+	
+	private static ImageView createImageView(String url, HPos alignment)
+	{
+		ImageView iv = new ImageView(new Image(new File(url).toURI().toString()));
+		GridPane.setHalignment(iv, alignment);
+		return iv;
+	}
 
+	@SuppressWarnings("unused")
 	private static Label createRunescapeLabelText(String text, double fontSize)
 	{
 		Label rsLabel = new Label(text);
