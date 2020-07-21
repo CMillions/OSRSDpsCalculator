@@ -6,21 +6,11 @@ import javafx.util.Pair;
 
 public class EquipmentSet 
 {
-	private Weapon weapon = null;
-	private Weapon ammo   = null;
-	private Armor head    = null;
-	private Armor cape    = null;
-	private Armor amulet  = null;
-	private Armor chest   = null;
-	private Armor legs    = null;
-	private Armor shield  = null;
-	private Armor gloves  = null;
-	private Armor boots   = null;
-	private Armor ring    = null;
+	final static int NUM_EQUIPMENT_SLOTS = 11;
 	
 	private Pair<AttackStyle, DamageType> combatStyle;
 	
-	private Armor[] armorArray = {head, cape, amulet, chest, legs, shield, gloves, boots, ring};
+	private Equippable[] itemArray;
 	
 	public int stabAtk     = 0;
 	public int slashAtk    = 0;
@@ -38,59 +28,197 @@ public class EquipmentSet
 	public int rangeStr    = 0;
 	public float magicDmg  = 0;
 	public int prayerBonus = 0;
+
+	public enum Slot
+	{
+		WEAPON,
+		AMMO,
+		HEAD,
+		CAPE,
+		AMULET,
+		CHEST,
+		LEGS,
+		SHIELD,
+		GLOVES,
+		BOOTS,
+		RING
+	}
 	
-	public void setWeapon(Weapon weapon) { this.weapon = weapon; }
-	public void setAmmo(Weapon ammo) 	 { this.ammo = ammo; 	 }
-	public void setHead(Armor head) 	 { this.head = head; 	 }
-	public void setCape(Armor cape) 	 { this.cape = cape; 	 }
-	public void setAmulet(Armor amulet)  { this.amulet = amulet; }
-	public void setChest(Armor chest)    { this.chest = chest;   }
-	public void setLegs(Armor legs) 	 { this.legs = legs;	 }
-	public void setShield(Armor shield)  { this.shield = shield; }
-	public void setGloves(Armor gloves)  { this.gloves = gloves; }
-	public void setBoots(Armor boots)    { this.boots = boots;	 }
-	public void setRing(Armor ring)      { this.ring = ring;	 }
-	public void setCombatStyle(Pair<AttackStyle, DamageType> style)
-		{ this.combatStyle = style; }
+	public void setEquipmentSlot(Equippable item, Slot slot)
+	{
+		switch(slot)
+		{
+		case WEAPON:
+			setWeapon(item);
+			break;
+			
+		case AMMO:
+			setAmmo(item);
+			break;
+			
+		case HEAD:
+			setHead(item);
+			break;
+			
+		case CAPE:
+			setCape(item);
+			break;
+			
+		case AMULET:
+			setAmulet(item);
+			break;
+			
+		case CHEST:
+			setChest(item);
+			break;
+			
+		case LEGS:
+			setLegs(item);
+			break;
+			
+		case SHIELD:
+			setShield(item);
+			break;
+			
+		case GLOVES:
+			setGloves(item);
+			break;
+			
+		case BOOTS:
+			setBoots(item);
+			break;
+		}
+	}
 	
+	public void setWeapon(Equippable newWeapon) 
+	{
+		itemArray[0] = newWeapon;
+	}
+
+	public void setAmmo(Equippable newAmmo) 
+	{
+		itemArray[1] = newAmmo;
+	}
+
+	public void setHead(Equippable head) 
+	{
+		itemArray[2] = head;
+	}
+
+	public void setCape(Equippable cape) 
+	{
+		itemArray[3] = cape;
+	}
+
+	public void setAmulet(Equippable amulet) 
+	{
+		itemArray[4] = amulet;
+	}
+
+	public void setChest(Equippable chest) 
+	{
+		itemArray[5]= chest;
+	}
+
+	public void setLegs(Equippable legs) 
+	{
+		itemArray[6] = legs;
+	}
+
+	public void setShield(Equippable shield) 
+	{
+		itemArray[7] = shield;
+	}
+
+	public void setGloves(Equippable gloves) 
+	{
+		itemArray[8] = gloves;
+	}
+
+	public void setBoots(Equippable boots) 
+	{
+		itemArray[9] = boots;
+	}
+
+	public void setRing(Equippable ring) 
+	{
+		itemArray[10] = ring;
+	}
+
+	public void setCombatStyle(Pair<AttackStyle, DamageType> combatStyle) 
+	{
+		this.combatStyle = combatStyle;
+	}
 
 	public EquipmentSet()
 	{
+		stabAtk     = 0;
+		slashAtk    = 0;
+		crushAtk    = 0;
+		magicAtk    = 0;
+		rangeAtk    = 0;
+		
+		stabDef     = 0;
+		slashDef    = 0;
+		crushDef    = 0;
+		magicDef    = 0;
+		rangeDef    = 0;
+		
+		meleeStr    = 0;
+		rangeStr    = 0;
+		magicDmg    = 0;
+		prayerBonus = 0;
+		
+		itemArray = new Equippable[NUM_EQUIPMENT_SLOTS];
 	}
 	
 	public void calculateTotalStats()
 	{
-		stabAtk = weapon.stabAtk;
-		slashAtk = weapon.slashAtk;
-		crushAtk = weapon.crushAtk;
-		magicAtk = weapon.magicAtk;
-		rangeAtk = weapon.rangeAtk + ammo.rangeAtk;
+		stabAtk     = 0;
+		slashAtk    = 0;
+		crushAtk    = 0;
+		magicAtk    = 0;
+		rangeAtk    = 0;
 		
-		stabDef = weapon.stabDef;
-		slashDef = weapon.slashDef;
-		crushDef = weapon.crushDef;
-		magicDef = weapon.magicDef;
-		rangeDef = weapon.rangeDef;
+		stabDef     = 0;
+		slashDef    = 0;
+		crushDef    = 0;
+		magicDef    = 0;
+		rangeDef    = 0;
 		
-		meleeStr = weapon.meleeStr;
-		rangeStr = weapon.rangeStr + ammo.rangeStr;
-		magicDmg = weapon.magicDmg;
-		prayerBonus = weapon.prayerBonus + ammo.prayerBonus;
+		meleeStr    = 0;
+		rangeStr    = 0;
+		magicDmg    = 0;
+		prayerBonus = 0;
 		
-		combatStyle.equals(null);
-		
-		for(int i = 0; i < armorArray.length; i++)
+		for(int i = 0; i < itemArray.length; i++)
 		{
-			stabDef += armorArray[i].stabDef;
-			slashDef += armorArray[i].slashDef;
-			crushDef += armorArray[i].crushDef;
-			magicDef += armorArray[i].magicDef;
-			rangeDef += armorArray[i].rangeDef;
-			
-			meleeStr += armorArray[i].meleeStr;
-			rangeStr += armorArray[i].rangeStr;
-			magicDmg += armorArray[i].magicDmg;
-			prayerBonus += armorArray[i].prayerBonus;
+			if(itemArray[i] != null)
+			{
+				System.out.println(itemArray[i].name + itemArray[i].meleeStr);
+				
+				if(itemArray[i] instanceof Weapon)
+				{
+					// do some other stuff
+				}
+				
+				stabAtk += itemArray[i].stabAtk;
+				slashAtk += itemArray[i].slashAtk;
+				crushAtk += itemArray[i].crushAtk;
+				magicAtk += itemArray[i].magicAtk;
+				rangeAtk += itemArray[i].rangeAtk;
+				
+				stabDef += itemArray[i].stabDef;
+				slashDef += itemArray[i].slashDef;
+				crushDef += itemArray[i].crushDef;
+				magicDef += itemArray[i].magicDef;
+				rangeDef += itemArray[i].rangeDef;
+				
+				meleeStr += itemArray[i].meleeStr;
+				rangeStr += itemArray[i].rangeStr;
+				magicDmg += itemArray[i].magicDmg;
+				prayerBonus += itemArray[i].prayerBonus;
+			}
 		}
 	}
 	

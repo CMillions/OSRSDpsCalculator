@@ -7,6 +7,9 @@ module calculator
 	requires transitive javafx.media;
 	requires javafx.swing;
 	requires javafx.web;
+	requires com.google.gson;
 	
 	exports calculator;
+	exports item;
+	exports utils;
 }
