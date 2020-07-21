@@ -2,7 +2,7 @@ package item;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Item 
+public class Item implements Comparable<Item>
 {
 	@SerializedName("name")
 	public String name;
@@ -26,5 +26,26 @@ public class Item
 		this.isWeapon = isWeapon;
 		this.itemStats = itemStats;
 		this.weaponStats = weaponStats;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return this.name;
+	}
+	
+	@Override
+	public int compareTo(Item compared)
+	{
+		return this.name.compareTo(compared.name);
+	}
+	
+	@Override
+	public boolean equals(Object other)
+	{
+		if(other == null || this.getClass() != other.getClass())
+			return false;
+		
+		return this.name.equalsIgnoreCase(((Item)other).name);
 	}
 }
