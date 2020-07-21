@@ -1,134 +1,161 @@
 package calculator;
 
-import java.util.List;
+import com.google.gson.annotations.SerializedName;
 
-public class Enemy 
+public class Enemy implements Comparable<Enemy>
 {
-	public enum Type
-	{
-		DEMON,
-		DRAGON,
-		FIRE,
-		GUARDIAN,
-		KALPHITE,
-		KURASK,
-		UNDEAD,
-		VORKATH,
-		NONE
-	}
+	@SerializedName("id")
+	public int id;
 	
-	public String name = "";
-	public String location = ""; // unnecessary?
+	@SerializedName("name")
+	public String name;
 	
-	public float expBonus = 0.f;
+	@SerializedName("combat_level")
+	public int combatLvl;
 	
-	public int combatLvl = 3;
-	public int hitpoints = 10;
-	public int atkLvl = 1;
-	public int strLvl = 1;
-	public int defLvl = 1;
-	public int magLvl = 1;
-	public int rngLvl = 1;
+	@SerializedName("hitpoints")
+	public int hitpoints;
 	
-	// AttackStyle enum?
+	@SerializedName("immune_poison")
+	public boolean isImmuneToPoison;
 	
+	@SerializedName("immune_venom")
+	public boolean isImmuneToVenom;
+	
+	@SerializedName("slayer_monster")
+	public boolean isSlayerMonster;
+	
+	@SerializedName("attack_level")	
+	public int atkLvl;
+	
+	@SerializedName("strength_level")
+	public int strLvl;
+	
+	@SerializedName("defence_level")
+	public int defLvl ;
+	
+	@SerializedName("magic_level")
+	public int magLvl;
+	
+	@SerializedName("ranged_level")
+	public int rngLvl;
+	
+
 	// Aggressive stats
-	public int atkSpeed = 0;
-	public int stabAtk = 0;
-	public int slashAtk = 0;
-	public int crushAtk = 0;
-	public int atkBonus = 0;
-	public int meleeStr = 0;
-	public int magAtk = 0;
-	public float magStr = 0;
-	public int rngAtk = 0;
-	public int rngStr = 0;
+	@SerializedName("attack_stab")
+	public int stabAtk;
+	
+	@SerializedName("attack_slash")
+	public int slashAtk;
+	
+	@SerializedName("attack_crush")
+	public int crushAtk;
+	
+	@SerializedName("attack_magic")
+	public int magAtk;
+	
+	@SerializedName("attack_ranged")
+	public int rngAtk;
+
 	
 	// Defensive stats
-	public int stabDef = 0;
+	@SerializedName("defence_stab")
+	public int stabDef;
+	
+	@SerializedName("defence_slash")
 	public int slashDef = 0;
+	
+	@SerializedName("defence_crush")
 	public int crushDef = 0;
+	
+	@SerializedName("defence_magic")
 	public int magDef = 0;
+	
+	@SerializedName("defence_ranged")
 	public int rngDef = 0;
 	
-	// Interval in .csv?
+	@SerializedName("attack_accuracy")
+	public float attackAccuracy;
 	
-	public Type type;
+	@SerializedName("melee_strength")
+	public int meleeStr;
 	
-	public Enemy(List<String> list)
+	@SerializedName("ranged_strength")
+	public int rngStr;
+	
+	@SerializedName("magic_damage")
+	public int magDamage;
+	
+	// Used for scythe calculations
+	@SerializedName("size")
+	public int size;
+	
+	public Enemy(int id, String name, int combatLvl, int hitpoints, boolean poisonImmune, boolean venomImmune, boolean slayerMonster,
+				int atkLvl, int strLvl, int defLvl, int magLvl, int rngLvl,
+				int stabAtk, int slashAtk, int crushAtk, int magAtk, int rngAtk,
+				int stabDef, int slashDef, int crushDef, int magDef, int rngDef,
+				float accuracy, int meleeStr, int rngStr, int magDamage, int size)
 	{
-		name = list.get(0);
-		location = list.get(1);
-		//expBonus = Float.parseFloat(list.get(2));
+		this.id = id;
+		this.name = name;
+		this.combatLvl = combatLvl;
+		this.hitpoints = hitpoints;
 		
-		combatLvl = Integer.parseInt(list.get(3));
-		hitpoints = Integer.parseInt(list.get(4));
-		atkLvl = Integer.parseInt(list.get(5));
-		strLvl = Integer.parseInt(list.get(6));
-		defLvl = Integer.parseInt(list.get(7));
-		magLvl = Integer.parseInt(list.get(8));
-		rngLvl = Integer.parseInt(list.get(9));
+		this.isImmuneToPoison = poisonImmune;
+		this.isImmuneToVenom = venomImmune;
+		this.isSlayerMonster = slayerMonster;
 		
-		// list.get(10) is main attack type
-		atkSpeed = Integer.parseInt(list.get(11));
-		stabAtk = Integer.parseInt(list.get(12));
-		slashAtk = Integer.parseInt(list.get(13));
-		crushAtk = Integer.parseInt(list.get(14));
-		atkBonus = Integer.parseInt(list.get(15));
-		meleeStr = Integer.parseInt(list.get(16));
-		magAtk = Integer.parseInt(list.get(17));
-		magStr = Float.parseFloat(list.get(18));
-		rngAtk = Integer.parseInt(list.get(19));
-		rngStr = Integer.parseInt(list.get(20));
+		this.atkLvl = atkLvl;
+		this.strLvl = strLvl;
+		this.defLvl = defLvl;
+		this.magLvl = magLvl;
+		this.rngLvl = rngLvl;
 		
-		stabDef = Integer.parseInt(list.get(21));
-		slashDef = Integer.parseInt(list.get(22));
-		crushDef = Integer.parseInt(list.get(23));
-		magDef = Integer.parseInt(list.get(24));
-		rngDef = Integer.parseInt(list.get(25));
-
-		switch(list.get(26).toLowerCase())
-		{
-			case "demon":
-				type = Type.DEMON;
-				break;
-				
-			case "dragon":
-				type = Type.DRAGON;
-				break;
-				
-			case "fire":
-				type = Type.FIRE;
-				break;
-				
-			case "guardian":
-				type = Type.GUARDIAN;
-				break;
-				
-			case "kalphite":
-				type = Type.KALPHITE;
-				break;
-				
-			case "kurask":
-				type = Type.KURASK;
-				
-			case "undead":
-				type = Type.UNDEAD;
-				break;
-				
-			case "vorkath":
-				type = Type.VORKATH;
-				break;
-				
-			default:
-				type = Type.NONE;
-				break;
-		}		
+		this.stabAtk = stabAtk;
+		this.slashAtk = slashAtk;
+		this.crushAtk = crushAtk;
+		this.magAtk = magAtk;
+		this.rngAtk = rngAtk;
+		
+		this.stabDef = stabDef;
+		this.slashDef = slashDef;
+		this.crushDef = crushDef;
+		this.magDef = magDef;
+		this.rngDef = rngDef;
+		
+		this.attackAccuracy = accuracy;
+		this.meleeStr = meleeStr;
+		this.rngStr = rngStr;
+		this.magDamage = magDamage;
+		
+		this.size = size;
 	} // End Enemy();
 
 	@Override
 	public String toString()
 	{
-		return this.name;
+		return this.name+ " | Level " + this.combatLvl;
+	}
+	
+	@Override
+	public int compareTo(Enemy comparedEnemy)
+	{
+		String newName = comparedEnemy.name;
+		
+		return this.name.compareTo(newName);
+	}
+	
+	@Override
+	public boolean equals(Object rhs)
+	{
+		boolean same = false;
+		
+		if(rhs instanceof Enemy)
+		{
+			Enemy temp = (Enemy) rhs;
+			same = (temp.name.equalsIgnoreCase(this.name));
+		}
+		
+		return same;
 	}
 }

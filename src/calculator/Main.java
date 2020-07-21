@@ -7,8 +7,7 @@
  * Standalone version of the Google Sheets DPS calculator found here:
  *     https://docs.google.com/spreadsheets/d/1nUgqaadPFRj8UvgvlXe2UkDDcIbQ2crTGjo57GhPm4M/edit
  *     
- * Big thanks to Bitterkoekje for the Google Sheets calculator. I split up the .csv files from
- * the online version to create this program.
+ * Big thanks to Bitterkoekje for the Google Sheets calculator.
  * 
  * Most of the layout is a pain in the ass to do since it's positioned by hand
  *
@@ -16,15 +15,25 @@
 
 package calculator;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 
-import calculator.Weapon.AttackStyle;
-import calculator.Weapon.DamageType;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import item.Equipment;
+import item.Item;
+import item.Stance;
+import item.Weapon;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
@@ -49,11 +58,9 @@ import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.util.Pair;
 import utils.ComboBoxAutoComplete;
 import utils.LimitedTextField;
 
@@ -72,7 +79,7 @@ public class Main extends Application
 	final static String BOOTS_FILE 			  = "boots.csv";
 	final static String GLOVES_FILE 		  = "gloves.csv";
 	final static String NECKLACES_FILE 		  = "necklaces.csv";
-	final static String ENEMIES_FILE		  = "enemies.csv";
+	final static String ENEMIES_FILE		  = "monsters-complete.json";
 	
 	// URLs for icons
 	final static String PROGRAM_ICON_URL  = "res/images/program_icon.png";
@@ -102,18 +109,18 @@ public class Main extends Application
 	final static String BG_COLOR = "0x606060";
 	
 	// Other variables
-	private static List<Weapon> weapons;
-	private static List<Weapon> ammo;
-	private static List<Armor> heads;
-	private static List<Armor> capes;
-	private static List<Armor> amulets;
-	private static List<Armor> chests;
-	private static List<Armor> legs;
-	private static List<Armor> shields;
-	private static List<Armor> gloves;
-	private static List<Armor> boots;
-	private static List<Armor> rings;
-	private static List<Enemy> enemies;
+	private static List<Item> weaponsList;
+	private static List<Item> ammoList;
+	private static List<Item> headsList;
+	private static List<Item> capesList;
+	private static List<Item> amuletsList;
+	private static List<Item> chestsList;
+	private static List<Item> legsList;
+	private static List<Item> shieldsList;
+	private static List<Item> glovesList;
+	private static List<Item> bootsList;
+	private static List<Item> ringsList;
+	private static List<Enemy> enemiesList;
 	
 	private static List<Label> comboBoxLabels;
 	private static EquipmentSet currentSet;
@@ -144,13 +151,40 @@ public class Main extends Application
 	private static float rngPrayerBonus;
 	private static float rngStrengthBonus;
 	
-	
 	private static int prayerBonus;
 	private static int otherBonus;
-	private static int styleBonus;
+	private static int atkStyleBonus;
+	private static int strStyleBonus;
 	
-	// floor((StrLvl + PotionBonus) * PrayerBonus * OtherBonus) + StyleBonus
-	private static int effectiveStrength;
+	// Any effectiveLevel = floor((lvl + PotionBonus) * PrayerBonus * OtherBonus) + StyleBonus
+	// Other bonus like slayer, salve, etc
+	private static int effectiveStrengthLevel;
+	private static int effectiveAttackLevel;
+	private static int maxHit;
+	private static int maxAttackRoll;
+	private static int maxDefenseRoll;
+	
+	private static double dps;
+	
+	private static Label playerMaxHitLabel;
+	private static Label playerAccuracyLabel;
+	private static Label dpsLabel;
+	
+	private static ComboBox<Item> weaponCB;
+	private static ComboBox<Item> ammoCB;
+	private static ComboBox<Item> headCB;
+	private static ComboBox<Item> capeCB;
+	private static ComboBox<Item> amuletCB;
+	private static ComboBox<Item> chestCB;
+	private static ComboBox<Item> legsCB;
+	private static ComboBox<Item> shieldCB;
+	private static ComboBox<Item> glovesCB;
+	private static ComboBox<Item> bootsCB;
+	private static ComboBox<Item> ringCB;
+	
+	private static ComboBox<Stance> combatStyleCB;
+	
+	private static ComboBox<Enemy> enemyCB;
 	
 	// JavaFX Related Functions
 	
@@ -237,7 +271,7 @@ public class Main extends Application
         container.add(createImageView(HP_ICON_URL, HPos.CENTER), 11, 6);
 		
         // spaghetti code so labels can show monster stats on startup
-        ComboBox<Enemy> enemyCB = createAutoCompleteComboBox(enemies);
+        enemyCB = createAutoCompleteComboBox(enemiesList);
 		enemyCB.getSelectionModel().selectFirst();
         
         Label monsterAtk = createRunescapeLabelText(enemyCB.getValue().atkLvl + "", 16, HPos.CENTER);
@@ -270,153 +304,227 @@ public class Main extends Application
         Label monsterRngDef = createRunescapeLabelText(enemyCB.getValue().rngDef + "", 16, HPos.CENTER);
         container.add(monsterRngDef, 14, 5);
 		
-		ComboBox<Weapon> weaponCB = createAutoCompleteComboBox(weapons);
-		ComboBox<Armor> shieldCB = createAutoCompleteComboBox(shields);
+		weaponCB = createAutoCompleteComboBox(weaponsList);
+		currentSet.equip(weaponCB.getValue());
+		shieldCB = createAutoCompleteComboBox(shieldsList);
+		currentSet.equip(shieldCB.getValue());
 		
 		shieldCB.setOnAction(e -> {
-			Armor selected = shieldCB.getValue();
+			 Item selected = shieldCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setShield(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
-		ComboBox<Pair<AttackStyle, DamageType>> combatStyleCB = new ComboBox<>();
-		combatStyleCB.setItems(FXCollections.observableArrayList(weaponCB.getSelectionModel().getSelectedItem().usableCombatOptions));
+		combatStyleCB = new ComboBox<>();
+		combatStyleCB.setItems(FXCollections.observableArrayList(weaponCB.getSelectionModel().getSelectedItem().weaponStats.stances));
 		combatStyleCB.getSelectionModel().selectFirst();
 		combatStyleCB.setPrefWidth(PREF_COMBOBOX_WIDTH);
 		combatStyleCB.setOnAction(e -> {
-			Pair<AttackStyle, DamageType> selected = combatStyleCB.getValue();
+			Stance selected = combatStyleCB.getValue();
 		
 			if(selected != null)
-			{
-				currentSet.setCombatStyle(selected);
+			{	
+				switch(selected.attackStyle.toLowerCase())
+				{
+				case "accurate":
+					atkStyleBonus = 3;
+					strStyleBonus = 0;
+					break;
+					
+				case "aggressive":
+					atkStyleBonus = 0;
+					strStyleBonus = 3;
+					break;
+					
+				case "controlled":
+					atkStyleBonus = 1;
+					strStyleBonus = 1;
+					break;
+					
+				default:
+					break;
+				}
+				
+				//calculateDPS();
 			}
 		});
+		
+		// Run once to make default values ok
+		Stance defaultStance = combatStyleCB.getValue();
+		
+		if(defaultStance != null)
+		{			
+			switch(defaultStance.attackStyle.toLowerCase())
+			{
+			case "accurate":
+				atkStyleBonus = 3;
+				strStyleBonus = 0;
+				break;
+				
+			case "aggressive":
+				atkStyleBonus = 0;
+				strStyleBonus = 3;
+				break;
+				
+			case "controlled":
+				atkStyleBonus = 1;
+				strStyleBonus = 1;
+				break;
+				
+			default:
+				break;
+			}
+		}
+			
 		
 		GridPane.setHalignment(combatStyleCB, HPos.CENTER);
 		
 		// Do things when item is selected
 		weaponCB.setOnAction(e -> {
-			Weapon w = weaponCB.getValue();
+			Item w = weaponCB.getValue();
 			
 			if(w != null)
 			{	
 				// Disable shields ComboBox if weapon is two handed
-				if(w.isTwoHand)
+				if(w.itemStats.slot.equals("2h"))
 				{
 					shieldCB.setDisable(true);
 					shieldCB.getSelectionModel().selectFirst();
+					currentSet.equip(shieldCB.getValue());
 				}
 				else
 				{
 					shieldCB.setDisable(false);
 				}
 
-				combatStyleCB.setItems(FXCollections.observableArrayList(w.usableCombatOptions));
+				// Update combat style
+				combatStyleCB.setItems(FXCollections.observableArrayList(w.weaponStats.stances));
+				combatStyleCB.getSelectionModel().selectFirst();
 				
 				// Update current equipment set
-				currentSet.setWeapon(w);
+				currentSet.equip(w);
+				//calculateDPS();
 			}
 		});
 
 		
-		ComboBox<Weapon> ammoCB = createAutoCompleteComboBox(ammo);
+		ammoCB = createAutoCompleteComboBox(ammoList);
+		currentSet.equip(ammoCB.getValue());
 		ammoCB.setOnAction(e -> {
-			Weapon selected = ammoCB.getValue();
+			Item selected = ammoCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setAmmo(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> headCB = createAutoCompleteComboBox(heads);
+		headCB = createAutoCompleteComboBox(headsList);
+		currentSet.equip(headCB.getValue());
 		headCB.setOnAction(e -> {
-			Armor selected = headCB.getValue();
+			Item selected = headCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setHead(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> capeCB = createAutoCompleteComboBox(capes);
+		capeCB = createAutoCompleteComboBox(capesList);
+		currentSet.equip(capeCB.getValue());
 		capeCB.setOnAction(e -> {
-			Armor selected = capeCB.getValue();
+			Item selected = capeCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setCape(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> amuletCB = createAutoCompleteComboBox(amulets);
+		amuletCB = createAutoCompleteComboBox(amuletsList);
+		currentSet.equip(amuletCB.getValue());
 		amuletCB.setOnAction(e -> {
-			Armor selected = amuletCB.getValue();
+			Item selected = amuletCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setAmulet(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> chestCB = createAutoCompleteComboBox(chests);
+		chestCB = createAutoCompleteComboBox(chestsList);
+		currentSet.equip(chestCB.getValue());
 		chestCB.setOnAction(e -> {
-			Armor selected = chestCB.getValue();
+			Item selected = chestCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setChest(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> legCB = createAutoCompleteComboBox(legs);
-		legCB.setOnAction(e -> {
-			Armor selected = legCB.getValue();
+		legsCB = createAutoCompleteComboBox(legsList);
+		currentSet.equip(legsCB.getValue());
+		legsCB.setOnAction(e -> {
+			Item selected = legsCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setLegs(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> gloveCB = createAutoCompleteComboBox(gloves);
-		gloveCB.setOnAction(e -> {
-			Armor selected = gloveCB.getValue();
+		glovesCB = createAutoCompleteComboBox(glovesList);
+		currentSet.equip(glovesCB.getValue());
+		glovesCB.setOnAction(e -> {
+			Item selected = glovesCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setGloves(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> bootCB = createAutoCompleteComboBox(boots);
-		bootCB.setOnAction(e -> {
-			Armor selected = bootCB.getValue();
+		bootsCB = createAutoCompleteComboBox(bootsList);
+		currentSet.equip(bootsCB.getValue());
+		bootsCB.setOnAction(e -> {
+			Item selected = bootsCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setBoots(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
 		
-		ComboBox<Armor> ringCB = createAutoCompleteComboBox(rings);
+		ringCB = createAutoCompleteComboBox(ringsList);
+		currentSet.equip(ringCB.getValue());
 		ringCB.setOnAction(e -> {
-			Armor selected = ringCB.getValue();
+			Item selected = ringCB.getValue();
 			
 			if(selected != null)
 			{
-				currentSet.setRing(selected);
+				currentSet.equip(selected);
+				//calculateDPS();
 			}
 		});
 		
@@ -425,7 +533,7 @@ public class Main extends Application
 			Enemy selected = enemyCB.getValue();
 			
 			if(selected != null)
-			{				
+			{								
 				monsterAtk.setText(selected.atkLvl + "");
 				monsterStr.setText(selected.strLvl + "");
 				monsterDef.setText(selected.defLvl + "");
@@ -438,6 +546,8 @@ public class Main extends Application
 				monsterCrushDef.setText(selected.crushDef + "");
 				monsterMagDef.setText(selected.magDef + "");
 				monsterRngDef.setText(selected.rngDef + "");
+				
+				//calculateDPS();
 			}
 		});
 
@@ -459,6 +569,7 @@ public class Main extends Application
 			{
 				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -479,6 +590,7 @@ public class Main extends Application
 			{
 				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -500,6 +612,7 @@ public class Main extends Application
 			{
 				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -520,6 +633,7 @@ public class Main extends Application
 			{
 				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -540,6 +654,7 @@ public class Main extends Application
 			{	
 				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -580,6 +695,8 @@ public class Main extends Application
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				
+				//calculateDPS();
 			}
 			else
 			{
@@ -600,6 +717,8 @@ public class Main extends Application
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				
+				//calculateDPS();
 			}
 		});
 		container.add(overloadCheckBox, 4, 1);
@@ -631,6 +750,7 @@ public class Main extends Application
 				}
 				
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);	
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -662,6 +782,7 @@ public class Main extends Application
 				}
 				
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -693,6 +814,7 @@ public class Main extends Application
 				}
 				
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -725,6 +847,7 @@ public class Main extends Application
 				}
 				
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -757,6 +880,7 @@ public class Main extends Application
 				}
 				
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -862,6 +986,7 @@ public class Main extends Application
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				//calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -886,6 +1011,7 @@ public class Main extends Application
 				atkLvl = Integer.parseInt(text);
 				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
+				//calculateDPS();
 			}
 		});
 		atkInputBox.setIntegersOnly(true);
@@ -900,6 +1026,7 @@ public class Main extends Application
 				strLvl = Integer.parseInt(text);
 				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
+				//calculateDPS();
 			}
 		});
 		strInputBox.setIntegersOnly(true);
@@ -914,6 +1041,7 @@ public class Main extends Application
 				defLvl = Integer.parseInt(text);
 				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
+				//calculateDPS();
 			}
 		});
 		defInputBox.setIntegersOnly(true);
@@ -928,6 +1056,7 @@ public class Main extends Application
 				magLvl = Integer.parseInt(text);
 				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
+				//calculateDPS();
 			}
 		});
 		magInputBox.setIntegersOnly(true);
@@ -942,6 +1071,7 @@ public class Main extends Application
 				rngLvl = Integer.parseInt(text);
 				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
+				//calculateDPS();
 			}
 		});
 		rngInputBox.setIntegersOnly(true);
@@ -968,9 +1098,6 @@ public class Main extends Application
 		// Add equipment labels to the GridPane
 		for(int i = 0; i < comboBoxLabels.size(); i++)
 		{
-			comboBoxLabels.get(i).setTextFill(Color.YELLOW);
-			comboBoxLabels.get(i).setFont(Font.font("Runescape UF", 18));
-			GridPane.setHalignment(comboBoxLabels.get(i), HPos.RIGHT);
 			container.add(comboBoxLabels.get(i), equipmentCol - 1, i + 1);
 		}
 		
@@ -982,10 +1109,10 @@ public class Main extends Application
 		container.add(capeCB, equipmentCol, 6);
 		container.add(amuletCB, equipmentCol, 7);
 		container.add(chestCB, equipmentCol, 8);
-		container.add(legCB, equipmentCol, 9);
+		container.add(legsCB, equipmentCol, 9);
 		container.add(shieldCB, equipmentCol, 10);
-		container.add(gloveCB, equipmentCol, 11);
-		container.add(bootCB, equipmentCol, 12);
+		container.add(glovesCB, equipmentCol, 11);
+		container.add(bootsCB, equipmentCol, 12);
 		container.add(ringCB, equipmentCol, 13);
 		
 		// Make each column a percentage of the window width
@@ -999,9 +1126,6 @@ public class Main extends Application
 		}
 		
 		container.getColumnConstraints().addAll(colConstraints);
-		
-		
-		
 		
 		/*** DEBUG ONLY REMOVE LATER ***/
 		//container.setGridLinesVisible(true);
@@ -1018,116 +1142,73 @@ public class Main extends Application
 		calculateButton.setOnAction(e -> {
 			try
 			{
-				if(weaponCB.getValue() != null)
-				{
-					currentSet.setWeapon(weaponCB.getValue());
-				}
-				else
+				if(weaponCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in WEAPON slot");
 				}
 				
-				if(combatStyleCB.getValue() != null)
-				{
-					currentSet.setCombatStyle(combatStyleCB.getValue());
-				}
-				else
+				if(combatStyleCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in COMBAT STYLE slot");
 				}
 				
-				if(ammoCB.getValue() != null)
-				{
-					currentSet.setAmmo(ammoCB.getValue());
-				}
-				else
+				if(ammoCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in AMMO slot");
 				}
 				
-				if(headCB.getValue() != null)
-				{
-					currentSet.setHead(headCB.getValue());
-				}
-				else
+				if(headCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in HEAD slot");
 				}
 				
-				if(capeCB.getValue() != null)
-				{
-					currentSet.setCape(capeCB.getValue());
-				}
-				else
+				if(capeCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in CAPE slot");
 				}
 				
-				if(amuletCB.getValue() != null)
-				{
-					currentSet.setAmulet(amuletCB.getValue());
-				}
-				else
+				if(amuletCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in AMULET slot");
 				}
 				
-				if(chestCB.getValue() != null)
-				{
-					currentSet.setChest(chestCB.getValue());
-				}
-				else
+				if(chestCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in CHEST slot");
 				}
 				
-				if(legCB.getValue() != null)
-				{
-					currentSet.setLegs(legCB.getValue());
-				}
-				else
+				if(legsCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in LEGS slot");
 				}
 				
-				if(shieldCB.getValue() != null)
-				{
-					// Even if the weapon is 2H, the shieldCB box is guaranteed to be
-					// set to 'None'
-					currentSet.setShield(shieldCB.getValue());
-				}
-				else
+				if(shieldCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in SHIELD slot");
 				}
 				
-				if(gloveCB.getValue() != null)
-				{
-					currentSet.setGloves(gloveCB.getValue());
-				}
-				else
+				if(glovesCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in GLOVES slot");
 				}
 				
-				if(bootCB.getValue() != null)
-				{
-					currentSet.setBoots(bootCB.getValue());
-				}
-				else
+				if(bootsCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in BOOTS slot");
 				}
 				
-				if(ringCB.getValue() != null)
-				{
-					currentSet.setRing(ringCB.getValue());
-				}
-				else
+				if(ringCB.getValue() == null)
 				{
 					throw new IllegalArgumentException("Invalid selection in RING slot");
 				}
 				
+				if(enemyCB.getValue() == null)
+				{
+					throw new IllegalArgumentException("Invalid selection in ENEMY slot");
+				}
+				
+				//calculateDPS();
+				System.out.println("Strength Bonus: " + currentSet.totalStats.meleeStrength);
 			}
 			catch(IllegalArgumentException err)
 			{
@@ -1145,22 +1226,18 @@ public class Main extends Application
 	
 	private static void initLabels()
 	{
-		comboBoxLabels = new ArrayList<>();
+		comboBoxLabels = new ArrayList<>();		
 		
-		comboBoxLabels.add(new Label("Weapon"));
-		comboBoxLabels.add(new Label("Combat"));
-		comboBoxLabels.add(new Label("Spell"));
-		comboBoxLabels.add(new Label("Ammo"));
-		comboBoxLabels.add(new Label("Head"));
-		comboBoxLabels.add(new Label("Cape"));
-		comboBoxLabels.add(new Label("Amulet"));
-		comboBoxLabels.add(new Label("Chest"));
-		comboBoxLabels.add(new Label("Legs"));
-		comboBoxLabels.add(new Label("Shield"));
-		comboBoxLabels.add(new Label("Gloves"));
-		comboBoxLabels.add(new Label("Boots"));
-		comboBoxLabels.add(new Label("Ring"));
-
+		String[] equipmentText = new String[] {"Weapon", "Combat", "Spell", "Ammo", 
+											   "Head", "Cape", "Amulet", "Chest", "Legs",
+											   "Shield", "Gloves", "Boots", "Ring"
+											  };
+		
+		for(String s : equipmentText)
+		{
+			comboBoxLabels.add(createRunescapeLabelText(s, 16, HPos.CENTER));
+		}
+		
 		for(Label l : comboBoxLabels)
 		{
 			l.setPadding(new Insets(10, 10, 10, 10));
@@ -1170,67 +1247,187 @@ public class Main extends Application
 		
 	private static void initItems()
 	{		
-		List<List<String>> itemData = readFile("res/data/" + WEAPONS_FILE);
+		weaponsList = new ArrayList<>();
+		ammoList = new ArrayList<>();
+		headsList = new ArrayList<>();
+		capesList = new ArrayList<>();
+		amuletsList = new ArrayList<>();
+		chestsList = new ArrayList<>();
+		legsList = new ArrayList<>();
+		shieldsList = new ArrayList<>();
+		glovesList = new ArrayList<>();
+		bootsList = new ArrayList<>();
+		ringsList = new ArrayList<>();
 		
-		weapons = new ArrayList<>();
+		headCB = new ComboBox<>();
+		capeCB = new ComboBox<>();
+		amuletCB = new ComboBox<>();
+		chestCB = new ComboBox<>();
+		legsCB = new ComboBox<>();
+		shieldCB = new ComboBox<>();
+		glovesCB = new ComboBox<>();
+		bootsCB = new ComboBox<>();
+		ringCB = new ComboBox<>();
 		
-		for(int i = 1; i < itemData.size(); i++)
+		String jsonData;
+		try 
 		{
-			weapons.add(new Weapon(itemData.get(i)));
-		}
-		
-		
-		
-		itemData = readFile("res/data/" + AMMO_FILE);
-		
-		ammo = new ArrayList<>();
-		
-		for(int i = 1; i < itemData.size(); i++)
+			jsonData = readFile("res/data/items-complete.json");
+			
+			Type type = new TypeToken<HashMap<Integer, Item>>(){}.getType();
+			HashMap<Integer, Item> jsonMap = new Gson().fromJson(jsonData, type);
+			
+			// https://stackoverflow.com/questions/20350206/populate-combobox-with-hashmap
+			Set<Item> weaponSet = new HashSet<>();
+			Set<Item> ammoSet = new HashSet<>();
+			Set<Item> headSet = new HashSet<>();
+			Set<Item> capeSet = new HashSet<>();
+			Set<Item> amuletSet = new HashSet<>();
+			Set<Item> chestSet = new HashSet<>();
+			Set<Item> legsSet = new HashSet<>();
+			Set<Item> shieldSet = new HashSet<>();
+			Set<Item> bootsSet = new HashSet<>();
+			Set<Item> glovesSet = new HashSet<>();
+			Set<Item> ringSet = new HashSet<>();
+			
+			for(Map.Entry<Integer, Item> entry : jsonMap.entrySet())
+			{
+				Item item = entry.getValue();
+				
+				if(item != null && item.isEquippableByPlayer)
+				{	
+					String itemSlot = entry.getValue().itemStats.slot.toLowerCase();
+					
+					switch(itemSlot)
+					{
+					case "2h":
+					case "weapon":
+						weaponSet.add(item);
+						break;
+						
+					case "ammo":
+						ammoSet.add(item);
+						break;
+						
+					case "head":
+						headSet.add(item);
+						break;
+						
+					case "cape":
+						capeSet.add(item);
+						break;
+						
+					case "neck":
+						amuletSet.add(item);
+						break;
+						
+					case "body":
+						chestSet.add(item);
+						break;
+						
+					case "legs":
+						legsSet.add(item);
+						break;
+						
+					case "shield":
+						shieldSet.add(item);
+						break;
+						
+					case "feet":
+						bootsSet.add(item);
+						break;
+						
+					case "hands":
+						glovesSet.add(item);
+						break;
+						
+					case "ring":
+						ringSet.add(item);
+						break;
+					}
+				}
+				else
+				{
+					entry.setValue(null);
+				}
+			}
+			
+			List<Stance> unarmedStance = new ArrayList<>();
+			unarmedStance.add(new Stance("crush", "accurate"));
+			unarmedStance.add(new Stance("crush", "aggressive"));
+			unarmedStance.add(new Stance("crush", "defensive"));
+			
+			// Create 'None' as on option for all slots
+			// Attack speed with no weapon equipped is 6
+			Item none = new Item("None", true, true,
+					new Equipment(0, 0, 0, 0, 0, 
+							      0, 0, 0, 0, 0,
+							      0, 0, 0, 0, "all"),
+					new Weapon(6, "unarmed", unarmedStance));
+
+			weaponsList.addAll(weaponSet);
+			ammoList.addAll(ammoSet);
+			headsList.addAll(headSet);
+			capesList.addAll(capeSet);
+			amuletsList.addAll(amuletSet);
+			chestsList.addAll(chestSet);
+			legsList.addAll(legsSet);
+			shieldsList.addAll(shieldSet);
+			bootsList.addAll(bootsSet);
+			glovesList.addAll(glovesSet);
+			ringsList.addAll(ringSet);
+			
+			Collections.sort(weaponsList);
+			Collections.sort(ammoList);
+			Collections.sort(headsList);
+			Collections.sort(capesList);
+			Collections.sort(amuletsList);
+			Collections.sort(chestsList);
+			Collections.sort(legsList);
+			Collections.sort(shieldsList);
+			Collections.sort(bootsList);
+			Collections.sort(glovesList);
+			Collections.sort(ringsList);
+			
+			weaponsList.add(0, none);
+			ammoList.add(0, none);
+			headsList.add(0, none);
+			capesList.add(0, none);
+			amuletsList.add(0, none);
+			chestsList.add(0, none);
+			legsList.add(0, none);
+			shieldsList.add(0, none);
+			bootsList.add(0, none);
+			glovesList.add(0, none);
+			ringsList.add(0, none);
+			
+		} 
+		catch (FileNotFoundException ex) 
 		{
-			ammo.add(new Weapon(itemData.get(i)));
+			System.err.println("Could not items-complete.json");
+			ex.printStackTrace();
 		}
-		
-		heads = new ArrayList<>();
-		capes = new ArrayList<>();
-		amulets = new ArrayList<>();
-		chests = new ArrayList<>();
-		legs = new ArrayList<>();
-		shields = new ArrayList<>();
-		gloves = new ArrayList<>();
-		boots = new ArrayList<>();
-		rings = new ArrayList<>();
-		
-		initArmorList(heads, HELMETS_FILE);
-		initArmorList(capes, CAPES_FILE);
-		initArmorList(amulets, NECKLACES_FILE);
-		initArmorList(chests, CHESTPIECES_FILE);
-		initArmorList(legs, LEGS_FILE);
-		initArmorList(shields, OFFHANDS_FILE);
-		initArmorList(gloves, GLOVES_FILE);
-		initArmorList(boots, BOOTS_FILE);
-		initArmorList(rings, RINGS_FILE);
 	}
 		
-	private static void initEnemies()
+	private static void initEnemies() throws FileNotFoundException
 	{
-		List<List<String>> data = readFile("res/data/" + ENEMIES_FILE);
+		String jsonData = readFile("res/data/" + ENEMIES_FILE);
 		
-		enemies = new ArrayList<>();
+		enemiesList = new ArrayList<>();
 		
-		for(int i = 1; i < data.size(); i++)
+		// https://howtodoinjava.com/gson/gson-serialize-deserialize-hashmap/
+		Type type = new TypeToken<HashMap<Integer, Enemy>>(){}.getType();
+		HashMap<Integer, Enemy> jsonMap = new Gson().fromJson(jsonData, type);
+		
+		// https://stackoverflow.com/questions/20350206/populate-combobox-with-hashmap
+		
+		for(Map.Entry<Integer, Enemy> entry : jsonMap.entrySet())
 		{
-			enemies.add(new Enemy(data.get(i)));
+			if(!enemiesList.contains(entry.getValue()))
+				enemiesList.add(entry.getValue());
 		}
-	}
-	
-	private static void initArmorList(List<Armor> input, String filename)
-	{
-		List<List<String>> itemData = readFile("res/data/" + filename);
 		
-		for(int i = 1; i < itemData.size(); i++)
-		{
-			input.add(new Armor(itemData.get(i)));
-		}
+		Collections.sort(enemiesList);
 	}
 	
 	private static <E> ComboBox<E> createAutoCompleteComboBox(List<E> items)
@@ -1253,16 +1450,6 @@ public class Main extends Application
 		ltf.setPrefWidth(PREF_TEXTFIELD_WIDTH);
 
 		return ltf;
-	}
-	
-	@SuppressWarnings("unused")
-	private static ComboBox<String> createStringComboBox(String[] elements)
-	{
-		ComboBox<String> cb = new ComboBox<>();
-		cb.getItems().addAll(elements);
-		cb.getSelectionModel().selectFirst();
-		
-		return cb;
 	}
 	
 	private static ImageView createImageView(String url)
@@ -1306,43 +1493,35 @@ public class Main extends Application
 		currentSet = new EquipmentSet();
 		
 		initItems();
-		initEnemies();
+		
+		try
+		{
+			initEnemies();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
 		initLabels();
 		Application.launch(args);
 	}
 	
-	private static List<List<String>> readFile(String filename)
+	private static String readFile(String filename) throws FileNotFoundException
 	{
-		List<List<String>> entries = new ArrayList<>();
+		File file = new File(filename);
+		Scanner scanner =  new Scanner(file);
 		
-		try(BufferedReader br = new BufferedReader(new FileReader(filename)))
+		StringBuilder output = new StringBuilder();
+		
+		while(scanner.hasNextLine())
 		{
-			String line;
-			while((line = br.readLine()) != null)
-			{
-				String[] values = line.split(",");
-				
-				for(int i = 0; i < values.length; i++)
-				{
-					if(values[i].equals(""))
-					{
-						values[i] = "0";
-					}
-				}
-				
-				entries.add(Arrays.asList(values));
-			}
-			
-			br.close();
-			return entries;
-		}
-		catch(Exception e)
-		{
-			System.err.println("***Error in Main.java***");
-			e.printStackTrace();
+			output.append(scanner.nextLine());
 		}
 		
-		return null;
+		scanner.close();
+		
+		return output.toString();
 	}
 	
 	public static boolean isNumeric(String str)
@@ -1363,5 +1542,6 @@ public class Main extends Application
 		
 		return true;
 	}
-
+	
+	
 }
