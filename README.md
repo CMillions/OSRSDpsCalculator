@@ -6,7 +6,7 @@ Based on Bitterkoekje's Google Sheets DPS calculator found here:
 
 Compiled using Eclipse 2020-03 with JavaSE 11, JavaFX 11.0.2, GSON 2.8.6
 
-I created a file named 'items-filtered.json' that uses the 'items-complete.json' file available [here](https://www.osrsbox.com/projects/osrsbox-db/). This file only contains equippable items from OSRS, and is a significantly smaller file
+I created a file named 'items-filtered.json' that uses the 'items-complete.json' file available [here](https://www.osrsbox.com/projects/osrsbox-db/). This file only contains equippable items from OSRS and is significantly smaller than the original
 
 [Debug Screenshot 1](https://gyazo.com/0474d5887b08171a319888c124198862)
 
