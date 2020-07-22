@@ -17,6 +17,7 @@ package calculator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import item.Item;
 import item.Stance;
 import item.Weapon;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -46,6 +48,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -185,23 +188,42 @@ public class Main extends Application
 	private static ComboBox<Stance> combatStyleCB;
 	
 	private static ComboBox<Enemy> enemyCB;
+
+	private static ProgressBar initialLoadingBar;
 	
 	// JavaFX Related Functions
 	
 	@Override
-	public void start(Stage primaryStage)
+	public void start(Stage primaryStage) throws InterruptedException
 	{	
+		initialLoadingBar = new ProgressBar(0);
+		
 		primaryStage.setWidth(WINDOW_WIDTH);
 		primaryStage.setHeight(WINDOW_HEIGHT);
 		primaryStage.setTitle("OSRS DPS Calculator");
-		
-		Scene mainScene = new Scene(createLayoutPane(), WINDOW_WIDTH, WINDOW_HEIGHT);
-		
 		primaryStage.getIcons().add(new Image("file:res/images/program_icon.png"));
-		primaryStage.setScene(mainScene);
 		primaryStage.setResizable(false);
 		primaryStage.show();
+		
+		try
+		{
+			initItems();
+			initEnemies();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+		initLabels();
+		
+		Scene mainScene = new Scene(createLayoutPane(), WINDOW_WIDTH, WINDOW_HEIGHT);
+		primaryStage.setScene(mainScene);
+        primaryStage.show();
+        
+		
 	}
+	
 	
 	private static GridPane createLayoutPane()
 	{
@@ -220,6 +242,8 @@ public class Main extends Application
 		container.add(statsLabel, 1, 0);
 		
 		// Labels to show invisible stat levels after a prayer is selected
+		
+
 		
 		Label buffedStatsLabel = createRunescapeLabelText("Buffed Stats", 16, HPos.CENTER);
 		container.add(buffedStatsLabel, 6, 0);
@@ -1085,6 +1109,11 @@ public class Main extends Application
 		prayerInputBox.setIntegersOnly(true);
 		prayerInputBox.setText("99");
 		
+		Label testLabel = createRunescapeLabelText("", 16, HPos.CENTER);
+		testLabel.textProperty().bind(buffedStrLvlLabel.textProperty());
+		
+		container.add(testLabel, 10, 15);
+		
 		container.add(atkInputBox, 2, 1);
 		container.add(strInputBox, 2, 2);
 		container.add(defInputBox, 2, 3);
@@ -1245,6 +1274,7 @@ public class Main extends Application
 		
 	}
 		
+	
 	private static void initItems()
 	{		
 		weaponsList = new ArrayList<>();
@@ -1272,7 +1302,7 @@ public class Main extends Application
 		String jsonData;
 		try 
 		{
-			jsonData = readFile("res/data/items-complete.json");
+			jsonData = readFile("res/data/items-filtered.json");
 			
 			Type type = new TypeToken<HashMap<Integer, Item>>(){}.getType();
 			HashMap<Integer, Item> jsonMap = new Gson().fromJson(jsonData, type);
@@ -1293,6 +1323,7 @@ public class Main extends Application
 			for(Map.Entry<Integer, Item> entry : jsonMap.entrySet())
 			{
 				Item item = entry.getValue();
+				
 				
 				if(item != null && item.isEquippableByPlayer)
 				{	
@@ -1351,7 +1382,7 @@ public class Main extends Application
 					entry.setValue(null);
 				}
 			}
-			
+					
 			List<Stance> unarmedStance = new ArrayList<>();
 			unarmedStance.add(new Stance("crush", "accurate"));
 			unarmedStance.add(new Stance("crush", "aggressive"));
@@ -1492,18 +1523,6 @@ public class Main extends Application
 	{
 		currentSet = new EquipmentSet();
 		
-		initItems();
-		
-		try
-		{
-			initEnemies();
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace();
-		}
-		
-		initLabels();
 		Application.launch(args);
 	}
 	

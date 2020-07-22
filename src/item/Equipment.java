@@ -49,6 +49,156 @@ public class Equipment
 	@SerializedName("slot")
 	public String slot;
 	
+	public int getStabAttack() 
+	{
+		return stabAttack;
+	}
+
+	public void setStabAttack(int stabAttack) 
+	{
+		this.stabAttack = stabAttack;
+	}
+
+	public int getSlashAttack() 
+	{
+		return slashAttack;
+	}
+
+	public void setSlashAttack(int slashAttack) 
+	{
+		this.slashAttack = slashAttack;
+	}
+
+	public int getCrushAttack() 
+	{
+		return crushAttack;
+	}
+
+	public void setCrushAttack(int crushAttack) 
+	{
+		this.crushAttack = crushAttack;
+	}
+
+	public int getMagicAttack() 
+	{
+		return magicAttack;
+	}
+
+	public void setMagicAttack(int magicAttack) 
+	{
+		this.magicAttack = magicAttack;
+	}
+
+	public int getRangedAttack() 
+	{
+		return rangedAttack;
+	}
+
+	public void setRangedAttack(int rangedAttack) 
+	{
+		this.rangedAttack = rangedAttack;
+	}
+
+	public int getStabDefense() 
+	{
+		return stabDefense;
+	}
+
+	public void setStabDefense(int stabDefense) 
+	{
+		this.stabDefense = stabDefense;
+	}
+
+	public int getSlashDefense() 
+	{
+		return slashDefense;
+	}
+
+	public void setSlashDefense(int slashDefense) 
+	{
+		this.slashDefense = slashDefense;
+	}
+
+	public int getCrushDefense() 
+	{
+		return crushDefense;
+	}
+
+	public void setCrushDefense(int crushDefense) 
+	{
+		this.crushDefense = crushDefense;
+	}
+
+	public int getMagicDefense() 
+	{
+		return magicDefense;
+	}
+
+	public void setMagicDefense(int magicDefense) 
+	{
+		this.magicDefense = magicDefense;
+	}
+
+	public int getRangedDefense() 
+	{
+		return rangedDefense;
+	}
+
+	public void setRangedDefense(int rangedDefense) 
+	{
+		this.rangedDefense = rangedDefense;
+	}
+
+	public int getMeleeStrength() 
+	{
+		return meleeStrength;
+	}
+
+	public void setMeleeStrength(int meleeStrength) 
+	{
+		this.meleeStrength = meleeStrength;
+	}
+
+	public int getRangedStrength() 
+	{
+		return rangedStrength;
+	}
+
+	public void setRangedStrength(int rangedStrength) 
+	{
+		this.rangedStrength = rangedStrength;
+	}
+
+	public int getMagicDamage() 
+	{
+		return magicDamage;
+	}
+
+	public void setMagicDamage(int magicDamage) 
+	{
+		this.magicDamage = magicDamage;
+	}
+
+	public int getPrayerBonus() 
+	{
+		return prayerBonus;
+	}
+
+	public void setPrayerBonus(int prayerBonus) 
+	{
+		this.prayerBonus = prayerBonus;
+	}
+
+	public void setSlot(String slot) 
+	{
+		this.slot = slot;
+	}
+
+	public Equipment()
+	{
+		
+	}
+	
 	public Equipment(int stabAtk, int slashAtk, int crushAtk, int magicAtk, int rangedAtk,
 					 int stabDef, int slashDef, int crushDef, int magicDef, int rangedDef,
 					 int meleeStr, int rangedStr, int magicDamage, int prayerBonus, String slot)
