@@ -8,8 +8,9 @@ import item.Item;
 
 public class EquipmentSet 
 {
-	public final static int NUM_EQUIPMENT_SLOTS = 11;
-	private static final Map<String, Integer> slotMap;
+	private final int NUM_EQUIPMENT_SLOTS = 11;
+	
+	public static final Map<String, Integer> slotMap;
 	static
 	{
 		slotMap = new HashMap<>();
@@ -31,10 +32,9 @@ public class EquipmentSet
 	
 	// Use Equipment POJO to hold total set stats
 	public Equipment totalStats;
-	
-	// Multiply weapon attackspeed by 0.6
-	private float attackSpeed;
 
+	public boolean isSlayerHelmEquipped;
+	
 	public void equip(Item item)
 	{
 		String itemSlot = item.itemStats.slot.toLowerCase();
@@ -67,9 +67,16 @@ public class EquipmentSet
 				totalStats.prayerBonus -= oldStats.prayerBonus;
 			}
 			
-			if(item.isWeapon)
+			if(itemSlot.equalsIgnoreCase("head"))
 			{
-				attackSpeed = item.weaponStats.attackSpeed * 0.6f;
+				if(item.getName().contains("slayer helmet"))
+				{
+					isSlayerHelmEquipped = true;
+				}
+				else
+				{
+					isSlayerHelmEquipped = false;
+				}
 			}
 			
 			itemArray[slotMap.get(itemSlot)] = item;
@@ -96,14 +103,22 @@ public class EquipmentSet
 	}
 
 	
+	
 	public EquipmentSet()
 	{		
+		isSlayerHelmEquipped = false;
 		itemArray = new Item[NUM_EQUIPMENT_SLOTS];
-		
+		// Initialize totalStats
 		totalStats = new Equipment(0, 0, 0, 0, 0,
 								   0, 0, 0, 0, 0,
 								   0, 0, 0, 0, "n/a");	
 	}
 	
-	
+	public Item getItem(String item)
+	{
+		if(slotMap.containsKey(item))
+			return itemArray[slotMap.get(item)];
+		
+		return null;
+	}
 }

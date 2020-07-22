@@ -4,6 +4,9 @@ import com.google.gson.annotations.SerializedName;
 
 public class Stance 
 {
+	@SerializedName("combat_style")
+	public String combatStyle;
+	
 	@SerializedName("attack_type")
 	public String attackType;
 	
@@ -35,8 +38,9 @@ public class Stance
 		
 	}
 	
-	public Stance(String atkType, String atkStyle)
+	public Stance(String combatStyle, String atkType, String atkStyle)
 	{
+		this.combatStyle = combatStyle;
 		this.attackType = atkType;
 		this.attackStyle = atkStyle;
 	}
@@ -44,7 +48,28 @@ public class Stance
 	@Override
 	public String toString()
 	{
-		return (this.attackStyle.toUpperCase() + " " + this.attackType.toUpperCase());
+		StringBuilder sb = new StringBuilder();
+		
+		if(combatStyle == null)
+		{
+			if(attackStyle != null && attackType != null)
+			{
+				sb.append(attackStyle.toUpperCase() + " " + attackType.toUpperCase());
+			}
+		}
+		else
+		{
+			if(attackStyle == null && attackType == null)
+			{
+				sb.append(combatStyle.toUpperCase());
+			}
+			else
+			{
+				sb.append(attackStyle.toUpperCase() + " " + attackType.toUpperCase());
+			}
+		}
+		
+		return sb.toString();
 	}
 
 }

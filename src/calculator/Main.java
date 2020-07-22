@@ -17,7 +17,6 @@ package calculator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +35,10 @@ import item.Item;
 import item.Stance;
 import item.Weapon;
 import javafx.application.Application;
-import javafx.application.Platform;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -48,7 +50,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -159,8 +160,11 @@ public class Main extends Application
 	private static int atkStyleBonus;
 	private static int strStyleBonus;
 	
+	// This depends on the selected stance
+	private static int effectiveEquipmentBonus;
+	
 	// Any effectiveLevel = floor((lvl + PotionBonus) * PrayerBonus * OtherBonus) + StyleBonus
-	// Other bonus like slayer, salve, etc
+	// OtherBonus is like slayer, salve, etc
 	private static int effectiveStrengthLevel;
 	private static int effectiveAttackLevel;
 	private static int maxHit;
@@ -172,6 +176,7 @@ public class Main extends Application
 	private static Label playerMaxHitLabel;
 	private static Label playerAccuracyLabel;
 	private static Label dpsLabel;
+	private static Label boundDpsLabel;
 	
 	private static ComboBox<Item> weaponCB;
 	private static ComboBox<Item> ammoCB;
@@ -188,16 +193,12 @@ public class Main extends Application
 	private static ComboBox<Stance> combatStyleCB;
 	
 	private static ComboBox<Enemy> enemyCB;
-
-	private static ProgressBar initialLoadingBar;
 	
 	// JavaFX Related Functions
 	
 	@Override
 	public void start(Stage primaryStage) throws InterruptedException
 	{	
-		initialLoadingBar = new ProgressBar(0);
-		
 		primaryStage.setWidth(WINDOW_WIDTH);
 		primaryStage.setHeight(WINDOW_HEIGHT);
 		primaryStage.setTitle("OSRS DPS Calculator");
@@ -242,8 +243,6 @@ public class Main extends Application
 		container.add(statsLabel, 1, 0);
 		
 		// Labels to show invisible stat levels after a prayer is selected
-		
-
 		
 		Label buffedStatsLabel = createRunescapeLabelText("Buffed Stats", 16, HPos.CENTER);
 		container.add(buffedStatsLabel, 6, 0);
@@ -329,6 +328,7 @@ public class Main extends Application
         container.add(monsterRngDef, 14, 5);
 		
 		weaponCB = createAutoCompleteComboBox(weaponsList);
+		weaponCB.getSelectionModel().selectedItemProperty().addListener(itemCBChangeListener);
 		currentSet.equip(weaponCB.getValue());
 		shieldCB = createAutoCompleteComboBox(shieldsList);
 		currentSet.equip(shieldCB.getValue());
@@ -344,7 +344,11 @@ public class Main extends Application
 		});
 		
 		combatStyleCB = new ComboBox<>();
-		combatStyleCB.setItems(FXCollections.observableArrayList(weaponCB.getSelectionModel().getSelectedItem().weaponStats.stances));
+		combatStyleCB.setItems(
+				FXCollections.observableArrayList(
+						weaponCB.getSelectionModel().getSelectedItem().getWeaponStats().getStances()
+						)
+				);
 		combatStyleCB.getSelectionModel().selectFirst();
 		combatStyleCB.setPrefWidth(PREF_COMBOBOX_WIDTH);
 		combatStyleCB.setOnAction(e -> {
@@ -352,27 +356,30 @@ public class Main extends Application
 		
 			if(selected != null)
 			{	
-				switch(selected.attackStyle.toLowerCase())
+				if(selected.attackStyle != null)
 				{
-				case "accurate":
-					atkStyleBonus = 3;
-					strStyleBonus = 0;
-					break;
-					
-				case "aggressive":
-					atkStyleBonus = 0;
-					strStyleBonus = 3;
-					break;
-					
-				case "controlled":
-					atkStyleBonus = 1;
-					strStyleBonus = 1;
-					break;
-					
-				default:
-					break;
+					switch(selected.attackStyle.toLowerCase())
+					{
+					case "accurate":
+						atkStyleBonus = 3;
+						strStyleBonus = 0;
+						break;
+						
+					case "aggressive":
+						atkStyleBonus = 0;
+						strStyleBonus = 3;
+						break;
+						
+					case "controlled":
+						atkStyleBonus = 1;
+						strStyleBonus = 1;
+						break;
+						
+					default:
+						break;
+					}
 				}
-				
+								
 				//calculateDPS();
 			}
 		});
@@ -1109,11 +1116,6 @@ public class Main extends Application
 		prayerInputBox.setIntegersOnly(true);
 		prayerInputBox.setText("99");
 		
-		Label testLabel = createRunescapeLabelText("", 16, HPos.CENTER);
-		testLabel.textProperty().bind(buffedStrLvlLabel.textProperty());
-		
-		container.add(testLabel, 10, 15);
-		
 		container.add(atkInputBox, 2, 1);
 		container.add(strInputBox, 2, 2);
 		container.add(defInputBox, 2, 3);
@@ -1237,7 +1239,7 @@ public class Main extends Application
 				}
 				
 				//calculateDPS();
-				System.out.println("Strength Bonus: " + currentSet.totalStats.meleeStrength);
+				//System.out.println("Strength Bonus: " + currentSet.totalStats.meleeStrength);
 			}
 			catch(IllegalArgumentException err)
 			{
@@ -1246,9 +1248,16 @@ public class Main extends Application
 			}
 
 		});
-		
+	
 		GridPane.setHalignment(calculateButton, HPos.CENTER);
 		container.add(calculateButton, 10, 12);
+		
+		dpsLabel = createRunescapeLabelText("DPS: ", 16, HPos.CENTER);
+		container.add(dpsLabel, 14, 11);
+		
+		boundDpsLabel = createRunescapeLabelText(null, 16, HPos.CENTER);
+		boundDpsLabel.textProperty().bind(new SimpleDoubleProperty(dps).asString());
+		container.add(boundDpsLabel, 15, 11);
 		
 		return container;
 	}
@@ -1274,7 +1283,6 @@ public class Main extends Application
 		
 	}
 		
-	
 	private static void initItems()
 	{		
 		weaponsList = new ArrayList<>();
@@ -1307,7 +1315,6 @@ public class Main extends Application
 			Type type = new TypeToken<HashMap<Integer, Item>>(){}.getType();
 			HashMap<Integer, Item> jsonMap = new Gson().fromJson(jsonData, type);
 			
-			// https://stackoverflow.com/questions/20350206/populate-combobox-with-hashmap
 			Set<Item> weaponSet = new HashSet<>();
 			Set<Item> ammoSet = new HashSet<>();
 			Set<Item> headSet = new HashSet<>();
@@ -1320,14 +1327,21 @@ public class Main extends Application
 			Set<Item> glovesSet = new HashSet<>();
 			Set<Item> ringSet = new HashSet<>();
 			
+			/*StringBuilder sb = new StringBuilder();
+			sb.append("{");
+			PrintWriter out = new PrintWriter("items-filtered.json");*/
+			
 			for(Map.Entry<Integer, Item> entry : jsonMap.entrySet())
 			{
 				Item item = entry.getValue();
 				
-				
 				if(item != null && item.isEquippableByPlayer)
 				{	
 					String itemSlot = entry.getValue().itemStats.slot.toLowerCase();
+					
+					/*sb.append("\"" + entry.getKey() + "\":");
+					sb.append(new Gson().toJson(item));
+					sb.append(",");*/
 					
 					switch(itemSlot)
 					{
@@ -1382,11 +1396,15 @@ public class Main extends Application
 					entry.setValue(null);
 				}
 			}
+			
+			/*sb.append("}");
+			out.println(sb.toString());
+			out.close();*/
 					
 			List<Stance> unarmedStance = new ArrayList<>();
-			unarmedStance.add(new Stance("crush", "accurate"));
-			unarmedStance.add(new Stance("crush", "aggressive"));
-			unarmedStance.add(new Stance("crush", "defensive"));
+			unarmedStance.add(new Stance(null, "crush", "accurate"));
+			unarmedStance.add(new Stance(null, "crush", "aggressive"));
+			unarmedStance.add(new Stance(null, "crush", "defensive"));
 			
 			// Create 'None' as on option for all slots
 			// Attack speed with no weapon equipped is 6
@@ -1516,6 +1534,9 @@ public class Main extends Application
 	}
 	
 	
+	private static ChangeListener<Item> itemCBChangeListener = (observable, oldValue, newValue) -> {
+			calculateDPS();
+	};
 	
 	// Main & Utility Functions
 	
@@ -1560,6 +1581,79 @@ public class Main extends Application
 		}
 		
 		return true;
+	}
+	
+	private static void calculateDPS()
+	{
+		try
+		{
+			Enemy enemy = enemyCB.getValue();
+			
+			effectiveStrengthLevel = (int)((strLvl + strPotionBonus)*(1 + strPrayerBonus) + strStyleBonus + 8);
+			maxHit = (int)(0.5 + effectiveStrengthLevel * (currentSet.totalStats.meleeStrength + 64) / 640.0);
+			
+			effectiveAttackLevel = (int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus) + atkStyleBonus + 8);
+			
+			// Determine equipment bonus based on selected attack style
+			maxAttackRoll = effectiveAttackLevel * (effectiveEquipmentBonus + 64);
+			
+			if(headCB.getValue().name.contains("slayer helmet") && enemy.isSlayerMonster)
+			{
+				System.out.println("On task slayer monster");
+				maxAttackRoll *= 7.0/6.0;
+				maxHit *= 7.0/6.0;
+			}
+			
+			String attackType = combatStyleCB.getValue().getAttackType().toLowerCase();
+			
+			int enemyDefBonus = 0;
+			
+			if(attackType != null)
+			{
+				switch(attackType)
+				{
+				case "stab":
+					effectiveEquipmentBonus = currentSet.totalStats.stabAttack;
+					enemyDefBonus = enemy.stabDef;
+					break;
+					
+				case "slash":
+					effectiveEquipmentBonus = currentSet.totalStats.slashAttack;
+					enemyDefBonus = enemy.slashDef;
+					break;
+					
+				case "crush":
+					effectiveEquipmentBonus = currentSet.totalStats.crushAttack;
+					enemyDefBonus = enemy.crushDef;
+					break;
+				
+				case "magic":
+					effectiveEquipmentBonus = currentSet.totalStats.magicAttack;
+					enemyDefBonus = enemy.magDef;
+					break;
+					
+				case "ranged":
+					effectiveEquipmentBonus = currentSet.totalStats.rangedAttack;
+					enemyDefBonus = enemy.rngDef;
+					break;
+					
+				default:
+					break;
+				}
+			}
+			
+			
+			maxDefenseRoll = (enemyCB.getValue().defLvl + 9) * (enemyDefBonus + 64);
+			
+			
+			System.out.println("Max hit: " + maxHit);
+			System.out.println("Max attack roll: " + maxAttackRoll);
+			System.out.println("Max defense roll: " + maxDefenseRoll);
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 	
 	
