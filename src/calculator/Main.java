@@ -21,11 +21,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -35,10 +33,7 @@ import item.Item;
 import item.Stance;
 import item.Weapon;
 import javafx.application.Application;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.value.ChangeListener;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -50,12 +45,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.BorderStroke;
 import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.BorderWidths;
@@ -72,38 +69,31 @@ import utils.LimitedTextField;
 public class Main extends Application
 {
 	// Filenames that contain item data
-	final static String WEAPONS_FILE   		  = "weapons.csv";
-	final static String OFFHANDS_FILE 		  = "offhands.csv";
-	final static String HELMETS_FILE 		  = "helmets.csv";
-	final static String CHESTPIECES_FILE 	  = "chestpieces.csv";
-	final static String LEGS_FILE 			  = "legs.csv";
-	final static String RINGS_FILE 			  = "rings.csv";
-	final static String CAPES_FILE 			  = "back_slot.csv";
-	final static String AMMO_FILE 			  = "ammo.csv";
-	final static String BOOTS_FILE 			  = "boots.csv";
-	final static String GLOVES_FILE 		  = "gloves.csv";
-	final static String NECKLACES_FILE 		  = "necklaces.csv";
-	final static String ENEMIES_FILE		  = "monsters-complete.json";
+	final static String ITEMS_FILE	  = "items-filtered.json";
+	final static String ENEMIES_FILE  = "monsters-filtered.json";
 	
 	// URLs for icons
-	final static String PROGRAM_ICON_URL  = "res/images/program_icon.png";
-	final static String ATTACK_ICON_URL   = "res/images/attack_icon.png";
-	final static String STRENGTH_ICON_URL = "res/images/strength_icon.png";
-	final static String DEFENSE_ICON_URL  = "res/images/defense_icon.png";
-	final static String MAGIC_ICON_URL    = "res/images/magic_icon.png";
-	final static String RANGE_ICON_URL    = "res/images/ranged_icon.png";
-	final static String HP_ICON_URL       = "res/images/hp_icon.png";
-	final static String PRAYER_ICON_URL   = "res/images/prayer_icon.png";
-	final static String STATS_ICON_URL    = "res/images/stats_icon.png";
-	final static String POTION_ICON_URL	  = "res/images/potion_icon.png";
-	final static String OVERLOAD_ICON_URL = "res/images/raids_overload_icon.png";
-	final static String MULTI_PRAYER_ICON_URL = "res/images/multi_prayer_icons.png";
+	final static String PROGRAM_ICON_URL  = "/images/program_icon.png";
+	final static String ATTACK_ICON_URL   = "/images/attack_icon.png";
+	final static String STRENGTH_ICON_URL = "/images/strength_icon.png";
+	final static String DEFENSE_ICON_URL  = "/images/defense_icon.png";
+	final static String MAGIC_ICON_URL    = "/images/magic_icon.png";
+	final static String RANGE_ICON_URL    = "/images/ranged_icon.png";
+	final static String HP_ICON_URL       = "/images/hp_icon.png";
+	final static String PRAYER_ICON_URL   = "/images/prayer_icon.png";
+	final static String STATS_ICON_URL    = "/images/stats_icon.png";
+	final static String POTION_ICON_URL	  = "/images/potion_icon.png";
+	final static String OVERLOAD_ICON_URL = "/images/raids_overload_icon.png";
+	final static String MULTI_PRAYER_ICON_URL = "/images/multi_prayer_icons.png";
 	
-	final static String STAB_DEFENSE_ICON_URL = "res/images/stab_defense_icon.png";
-	final static String SLASH_DEFENSE_ICON_URL = "res/images/slash_defense_icon.png";
-	final static String CRUSH_DEFENSE_ICON_URL = "res/images/crush_defense_icon.png";
-	final static String MAGIC_DEFENSE_ICON_URL = "res/images/magic_defense_icon.png";
-	final static String RANGE_DEFENSE_ICON_URL = "res/images/range_defense_icon.png";
+	final static String STAB_ICON_URL = "/images/stab_defense_icon.png";
+	final static String SLASH_ICON_URL = "/images/slash_defense_icon.png";
+	final static String CRUSH_ICON_URL = "/images/crush_defense_icon.png";
+	final static String MAGIC_DEFENSE_ICON_URL = "/images/magic_defense_icon.png";
+	final static String RANGE_DEFENSE_ICON_URL = "/images/range_defense_icon.png";
+	
+	final static String RANGE_STRENGTH_ICON_URL = "/images/range_strength_icon.png";
+	final static String MAGIC_STRENGTH_ICON_URL = "/images/magic_strength_icon.png";
 	
 	// JavaFX Constants
 	final static int PREF_COMBOBOX_WIDTH = 200;
@@ -115,6 +105,7 @@ public class Main extends Application
 	// Other variables
 	private static List<Item> weaponsList;
 	private static List<Item> ammoList;
+	private static List<Item> dartList;
 	private static List<Item> headsList;
 	private static List<Item> capesList;
 	private static List<Item> amuletsList;
@@ -170,16 +161,22 @@ public class Main extends Application
 	private static int maxHit;
 	private static int maxAttackRoll;
 	private static int maxDefenseRoll;
-	
+	private static double accuracy;
 	private static double dps;
 	
-	private static Label playerMaxHitLabel;
-	private static Label playerAccuracyLabel;
+	
+	private static Label maxHitLabel;
+	private static Label numberMaxHitLabel;
+	
 	private static Label dpsLabel;
-	private static Label boundDpsLabel;
+	private static Label numberDpsLabel;
+
+	private static Label accuracyLabel;
+	private static Label numberAccuracyLabel;
 	
 	private static ComboBox<Item> weaponCB;
 	private static ComboBox<Item> ammoCB;
+	private static ComboBox<Item> dartCB;
 	private static ComboBox<Item> headCB;
 	private static ComboBox<Item> capeCB;
 	private static ComboBox<Item> amuletCB;
@@ -194,7 +191,11 @@ public class Main extends Application
 	
 	private static ComboBox<Enemy> enemyCB;
 	
+	static boolean showBlowpipeAlert = true;
+	static boolean blowpipeEquipped = false;
+	
 	// JavaFX Related Functions
+	static ProgressBar pb;
 	
 	@Override
 	public void start(Stage primaryStage) throws InterruptedException
@@ -202,27 +203,30 @@ public class Main extends Application
 		primaryStage.setWidth(WINDOW_WIDTH);
 		primaryStage.setHeight(WINDOW_HEIGHT);
 		primaryStage.setTitle("OSRS DPS Calculator");
-		primaryStage.getIcons().add(new Image("file:res/images/program_icon.png"));
+		primaryStage.getIcons().add(new Image(Main.class.getResource(PROGRAM_ICON_URL).toExternalForm()));
 		primaryStage.setResizable(false);
 		primaryStage.show();
+
+		pb = new ProgressBar();
+		BorderPane pane = new BorderPane();
+		pane.setCenter(pb);
 		
 		try
 		{
 			initItems();
 			initEnemies();
+			initLabels();
 		}
 		catch(Exception ex)
 		{
 			ex.printStackTrace();
 		}
 		
-		initLabels();
+		
 		
 		Scene mainScene = new Scene(createLayoutPane(), WINDOW_WIDTH, WINDOW_HEIGHT);
 		primaryStage.setScene(mainScene);
         primaryStage.show();
-        
-		
 	}
 	
 	
@@ -238,6 +242,26 @@ public class Main extends Application
 		Color gray = Color.web("0x333333");
 		container.setBackground(new Background(new BackgroundFill(gray, CornerRadii.EMPTY, Insets.EMPTY)));
 		container.setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+		
+		int importantTextSize = 20;
+		
+		maxHitLabel = createRunescapeLabelText("Max hit: ", importantTextSize, HPos.LEFT);
+		container.add(maxHitLabel, 3, 10);
+		
+		numberMaxHitLabel = createRunescapeLabelText(null, importantTextSize, HPos.RIGHT);
+		container.add(numberMaxHitLabel, 3, 10);
+		
+		accuracyLabel = createRunescapeLabelText("Accuracy: ", importantTextSize, HPos.LEFT);
+		container.add(accuracyLabel, 3, 11);
+		
+		numberAccuracyLabel = createRunescapeLabelText(null, importantTextSize, HPos.RIGHT);
+		container.add(numberAccuracyLabel, 3, 11);
+		
+		dpsLabel = createRunescapeLabelText("DPS: ", importantTextSize, HPos.LEFT);
+		container.add(dpsLabel, 3, 12);
+		
+		numberDpsLabel = createRunescapeLabelText(null, importantTextSize, HPos.RIGHT);
+		container.add(numberDpsLabel, 3, 12);
 		
 		Label statsLabel = createRunescapeLabelText("Stats", 16, HPos.CENTER);
 		container.add(statsLabel, 1, 0);
@@ -283,63 +307,108 @@ public class Main extends Application
 		container.add(createImageView(POTION_ICON_URL, HPos.CENTER), 3, 0);	
 		
 		// Showing monster stats
-		Label monsterStatsLabel = createRunescapeLabelText("Monster Stats", 16, HPos.CENTER);
-        GridPane.setColumnSpan(monsterStatsLabel, 4);
-        container.add(monsterStatsLabel, 11, 0);
+		Label monsterCombatStatsLabel = createRunescapeLabelText("Combat Stats", 16, HPos.CENTER);
+        GridPane.setColumnSpan(monsterCombatStatsLabel, 5);
+        container.add(monsterCombatStatsLabel, 11, 0);
         container.add(createImageView(ATTACK_ICON_URL, HPos.CENTER), 11, 1);
-        container.add(createImageView(STRENGTH_ICON_URL, HPos.CENTER), 11, 2);
-        container.add(createImageView(DEFENSE_ICON_URL, HPos.CENTER), 11, 3);
-        container.add(createImageView(MAGIC_ICON_URL, HPos.CENTER), 11, 4);
-        container.add(createImageView(RANGE_ICON_URL, HPos.CENTER), 11, 5);
-        container.add(createImageView(HP_ICON_URL, HPos.CENTER), 11, 6);
+        container.add(createImageView(STRENGTH_ICON_URL, HPos.CENTER), 12, 1);
+        container.add(createImageView(DEFENSE_ICON_URL, HPos.CENTER), 13, 1);
+        container.add(createImageView(MAGIC_ICON_URL, HPos.CENTER), 14, 1);
+        container.add(createImageView(RANGE_ICON_URL, HPos.CENTER), 15, 1);
+        //container.add(createImageView(HP_ICON_URL, HPos.CENTER), 11, 6);
 		
-        // spaghetti code so labels can show monster stats on startup
+        Label monsterAttackBonusLabel = createRunescapeLabelText("Attack Bonuses", 16, HPos.CENTER);
+        container.add(monsterAttackBonusLabel, 11, 3);
+        GridPane.setColumnSpan(monsterAttackBonusLabel, 5);
+        
         enemyCB = createAutoCompleteComboBox(enemiesList);
 		enemyCB.getSelectionModel().selectFirst();
         
-        Label monsterAtk = createRunescapeLabelText(enemyCB.getValue().atkLvl + "", 16, HPos.CENTER);
-        container.add(monsterAtk, 12, 1);
-        Label monsterStr = createRunescapeLabelText(enemyCB.getValue().strLvl + "", 16, HPos.CENTER);
-        container.add(monsterStr, 12, 2);
-        Label monsterDef = createRunescapeLabelText(enemyCB.getValue().defLvl + "", 16, HPos.CENTER);
-        container.add(monsterDef, 12, 3);
-        Label monsterMag = createRunescapeLabelText(enemyCB.getValue().magLvl + "", 16, HPos.CENTER);
-        container.add(monsterMag, 12, 4);
-        Label monsterRng = createRunescapeLabelText(enemyCB.getValue().rngLvl + "", 16, HPos.CENTER);
-        container.add(monsterRng, 12, 5);
-        Label monsterHP = createRunescapeLabelText(enemyCB.getValue().hitpoints + "", 16, HPos.CENTER);
-        container.add(monsterHP, 12, 6);
-        
-        container.add(createImageView(STAB_DEFENSE_ICON_URL,  HPos.CENTER), 13, 1);
-        container.add(createImageView(SLASH_DEFENSE_ICON_URL, HPos.CENTER), 13, 2);
-        container.add(createImageView(CRUSH_DEFENSE_ICON_URL, HPos.CENTER), 13, 3);
-        container.add(createImageView(MAGIC_DEFENSE_ICON_URL, HPos.CENTER), 13, 4);
-        container.add(createImageView(RANGE_DEFENSE_ICON_URL, HPos.CENTER), 13, 5);
-        
-        Label monsterStabDef = createRunescapeLabelText(enemyCB.getValue().stabDef + "", 16, HPos.CENTER);
-        container.add(monsterStabDef, 14, 1);
-        Label monsterSlashDef = createRunescapeLabelText(enemyCB.getValue().slashDef + "", 16, HPos.CENTER);
-        container.add(monsterSlashDef, 14, 2);
-        Label monsterCrushDef = createRunescapeLabelText(enemyCB.getValue().crushDef + "", 16, HPos.CENTER);
-        container.add(monsterCrushDef, 14, 3);
-        Label monsterMagDef = createRunescapeLabelText(enemyCB.getValue().magDef + "", 16, HPos.CENTER);
-        container.add(monsterMagDef, 14, 4);
-        Label monsterRngDef = createRunescapeLabelText(enemyCB.getValue().rngDef + "", 16, HPos.CENTER);
-        container.add(monsterRngDef, 14, 5);
+		Enemy defaultEnemy = enemyCB.getValue();
 		
+        Label monsterAtk = createRunescapeLabelText(defaultEnemy.atkLvl + "", 16, HPos.CENTER);
+        container.add(monsterAtk, 11, 2);
+        Label monsterStr = createRunescapeLabelText(defaultEnemy.strLvl + "", 16, HPos.CENTER);
+        container.add(monsterStr, 12, 2);
+        Label monsterDef = createRunescapeLabelText(defaultEnemy.defLvl + "", 16, HPos.CENTER);
+        container.add(monsterDef, 13, 2);
+        Label monsterMag = createRunescapeLabelText(defaultEnemy.magLvl + "", 16, HPos.CENTER);
+        container.add(monsterMag, 14, 2);
+        Label monsterRng = createRunescapeLabelText(defaultEnemy.rngLvl + "", 16, HPos.CENTER);
+        container.add(monsterRng, 15, 2);
+        /*Label monsterHP = createRunescapeLabelText(enemyCB.getValue().hitpoints + "", 16, HPos.CENTER);
+        container.add(monsterHP, 12, 6);*/
+        
+        container.add(createImageView(STAB_ICON_URL,  HPos.CENTER), 11, 4);
+        container.add(createImageView(SLASH_ICON_URL, HPos.CENTER), 12, 4);
+        container.add(createImageView(CRUSH_ICON_URL, HPos.CENTER), 13, 4);
+        container.add(createImageView(MAGIC_ICON_URL, HPos.CENTER), 14, 4);
+        container.add(createImageView(RANGE_ICON_URL, HPos.CENTER), 15, 4);
+        
+        Label monsterStabAtk = createRunescapeLabelText(defaultEnemy.stabAtk + "", 16, HPos.CENTER);
+        container.add(monsterStabAtk, 11, 5);
+        Label monsterSlashAtk = createRunescapeLabelText(defaultEnemy.slashAtk + "", 16, HPos.CENTER);
+        container.add(monsterSlashAtk, 12, 5);
+        Label monsterCrushAtk = createRunescapeLabelText(defaultEnemy.crushAtk + "", 16, HPos.CENTER);
+        container.add(monsterCrushAtk, 13, 5);
+        Label monsterMagAtk = createRunescapeLabelText(defaultEnemy.magAtk + "", 16, HPos.CENTER);
+        container.add(monsterMagAtk, 14, 5);
+        Label monsterRngAtk = createRunescapeLabelText(defaultEnemy.rngAtk + "", 16, HPos.CENTER);
+        container.add(monsterRngAtk, 15, 5);
+		
+        Label monsterDefenseBonusLabel = createRunescapeLabelText("Defense Bonuses", 16, HPos.CENTER);
+        container.add(monsterDefenseBonusLabel, 11, 6);
+        GridPane.setColumnSpan(monsterDefenseBonusLabel, 5);
+        
+        container.add(createImageView(SLASH_ICON_URL, HPos.CENTER), 11, 7);
+        container.add(createImageView(STAB_ICON_URL, HPos.CENTER), 12, 7);
+        container.add(createImageView(CRUSH_ICON_URL, HPos.CENTER), 13, 7);
+        container.add(createImageView(MAGIC_DEFENSE_ICON_URL, HPos.CENTER), 14, 7);
+        container.add(createImageView(RANGE_DEFENSE_ICON_URL, HPos.CENTER), 15, 7);
+        
+        Label monsterStabDef = createRunescapeLabelText(defaultEnemy.stabDef + "", 16, HPos.CENTER);
+        container.add(monsterStabDef, 11, 8);
+        Label monsterSlashDef = createRunescapeLabelText(defaultEnemy.slashDef + "", 16, HPos.CENTER);
+        container.add(monsterSlashDef, 12, 8);
+        Label monsterCrushDef = createRunescapeLabelText(defaultEnemy.crushDef + "", 16, HPos.CENTER);
+        container.add(monsterCrushDef, 13, 8);
+        Label monsterMagDef = createRunescapeLabelText(defaultEnemy.magDef + "", 16, HPos.CENTER);
+        container.add(monsterMagDef, 14, 8);
+        Label monsterRngDef = createRunescapeLabelText(defaultEnemy.rngDef + "", 16, HPos.CENTER);
+        container.add(monsterRngDef, 15, 8);
+        
+        Label otherBonusLabel = createRunescapeLabelText("Other Bonuses", 16, HPos.CENTER);
+        container.add(otherBonusLabel, 11, 9);
+        GridPane.setColumnSpan(otherBonusLabel, 5);
+        
+        container.add(createImageView(STRENGTH_ICON_URL, HPos.CENTER), 11, 10);
+        container.add(createImageView(RANGE_STRENGTH_ICON_URL, HPos.CENTER), 12, 10);
+        container.add(createImageView(MAGIC_STRENGTH_ICON_URL, HPos.CENTER), 13, 10);
+        
+        
+        Label monsterStrBonus = createRunescapeLabelText(defaultEnemy.meleeStr + "", 16, HPos.CENTER);
+        container.add(monsterStrBonus, 11, 11);
+        Label monsterRngStrBonus = createRunescapeLabelText(defaultEnemy.rngStr + "", 16, HPos.CENTER);
+        container.add(monsterRngStrBonus, 12, 11);
+        Label monsterMagDamageBonus = createRunescapeLabelText(defaultEnemy.magDamage + "", 16, HPos.CENTER);
+        container.add(monsterMagDamageBonus, 13, 11);
+        
 		weaponCB = createAutoCompleteComboBox(weaponsList);
-		weaponCB.getSelectionModel().selectedItemProperty().addListener(itemCBChangeListener);
 		currentSet.equip(weaponCB.getValue());
 		shieldCB = createAutoCompleteComboBox(shieldsList);
 		currentSet.equip(shieldCB.getValue());
 		
-		shieldCB.setOnAction(e -> {
-			 Item selected = shieldCB.getValue();
-			
-			if(selected != null)
+		shieldCB.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+			 
+			if(oldValue != null && newValue != null && !oldValue.equals(newValue))
 			{
-				currentSet.equip(selected);
-				//calculateDPS();
+				Item selected = shieldCB.getValue();
+				
+				if(selected != null)
+				{
+					currentSet.equip(selected);
+					calculateDPS();
+				}
 			}
 		});
 		
@@ -380,7 +449,7 @@ public class Main extends Application
 					}
 				}
 								
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -414,6 +483,11 @@ public class Main extends Application
 		
 		GridPane.setHalignment(combatStyleCB, HPos.CENTER);
 		
+		
+		Alert infoBox = new Alert(AlertType.INFORMATION);
+		infoBox.setTitle("Information");
+		
+		
 		// Do things when item is selected
 		weaponCB.setOnAction(e -> {
 			Item w = weaponCB.getValue();
@@ -431,6 +505,45 @@ public class Main extends Application
 				{
 					shieldCB.setDisable(false);
 				}
+				
+				if(!blowpipeEquipped && w.getName().equalsIgnoreCase("toxic blowpipe"))
+				{
+					
+					if(showBlowpipeAlert)
+					{
+						infoBox.setHeaderText("Toxic Blowpipe Ammo");
+						infoBox.setContentText("Blowpipe ammo is selected in the 'ammo' dropdown list. This message will " + 
+											   "not be shown again.");
+						infoBox.show();
+						
+						showBlowpipeAlert = false;
+					}
+					
+					
+					blowpipeEquipped = true;
+					
+					ammoCB.getSelectionModel().clearSelection();
+					ammoCB.setDisable(true);
+					ammoCB.setVisible(false);
+					
+					dartCB.getSelectionModel().selectFirst();
+					dartCB.setDisable(false);
+					dartCB.setVisible(true);
+					
+				}
+				else if(blowpipeEquipped && !w.getName().equalsIgnoreCase("toxic blowpipe"))
+				{
+					blowpipeEquipped = false;
+					
+					dartCB.getSelectionModel().clearSelection();
+					dartCB.setDisable(true);
+					dartCB.setVisible(false);
+					
+					ammoCB.getSelectionModel().selectFirst();
+					ammoCB.setDisable(false);
+					ammoCB.setVisible(true);
+					
+				}
 
 				// Update combat style
 				combatStyleCB.setItems(FXCollections.observableArrayList(w.weaponStats.stances));
@@ -438,7 +551,7 @@ public class Main extends Application
 				
 				// Update current equipment set
 				currentSet.equip(w);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 
@@ -448,12 +561,29 @@ public class Main extends Application
 		ammoCB.setOnAction(e -> {
 			Item selected = ammoCB.getValue();
 			
-			if(selected != null)
+			if(selected != null && !blowpipeEquipped)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
+		
+		dartCB = createAutoCompleteComboBox(dartList);
+		dartCB.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+			
+			if(newValue != null && oldValue != null)
+			{
+				if(!oldValue.getName().equalsIgnoreCase(newValue.getName()))
+				{
+					System.out.println("breh");
+				}
+			}
+			
+			
+		});
+		
+		dartCB.setDisable(true);
+		dartCB.setVisible(false);
 		
 		
 		headCB = createAutoCompleteComboBox(headsList);
@@ -464,7 +594,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -477,7 +607,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -490,7 +620,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -503,7 +633,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -516,7 +646,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -529,7 +659,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -542,7 +672,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -555,7 +685,7 @@ public class Main extends Application
 			if(selected != null)
 			{
 				currentSet.equip(selected);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		
@@ -570,7 +700,12 @@ public class Main extends Application
 				monsterDef.setText(selected.defLvl + "");
 				monsterMag.setText(selected.magLvl + "");
 				monsterRng.setText(selected.rngLvl + "");
-				monsterHP.setText(selected.hitpoints + "");
+				
+				monsterStabAtk.setText(selected.stabAtk + "");
+				monsterSlashAtk.setText(selected.slashAtk + "");
+				monsterCrushAtk.setText(selected.crushAtk + "");
+				monsterMagAtk.setText(selected.magAtk + "");
+				monsterRngAtk.setText(selected.rngAtk + "");
 				
 				monsterStabDef.setText(selected.stabDef + "");
 				monsterSlashDef.setText(selected.slashDef + "");
@@ -578,7 +713,11 @@ public class Main extends Application
 				monsterMagDef.setText(selected.magDef + "");
 				monsterRngDef.setText(selected.rngDef + "");
 				
-				//calculateDPS();
+				monsterStrBonus.setText(selected.meleeStr + "");
+				monsterRngStrBonus.setText(selected.rngStr + "");
+				monsterMagDamageBonus.setText(selected.magDamage + "");
+				
+				calculateDPS();
 			}
 		});
 
@@ -600,7 +739,7 @@ public class Main extends Application
 			{
 				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -621,7 +760,7 @@ public class Main extends Application
 			{
 				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -643,7 +782,7 @@ public class Main extends Application
 			{
 				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -664,7 +803,7 @@ public class Main extends Application
 			{
 				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -685,7 +824,7 @@ public class Main extends Application
 			{	
 				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -727,7 +866,7 @@ public class Main extends Application
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
 				
-				//calculateDPS();
+				calculateDPS();
 			}
 			else
 			{
@@ -749,7 +888,7 @@ public class Main extends Application
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
 				
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		container.add(overloadCheckBox, 4, 1);
@@ -781,7 +920,7 @@ public class Main extends Application
 				}
 				
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);	
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -813,7 +952,7 @@ public class Main extends Application
 				}
 				
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -845,7 +984,7 @@ public class Main extends Application
 				}
 				
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -878,7 +1017,7 @@ public class Main extends Application
 				}
 				
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -911,7 +1050,7 @@ public class Main extends Application
 				}
 				
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -929,6 +1068,9 @@ public class Main extends Application
 		multiStatPrayerCB.getItems().addAll("None", "Chivalry", "Piety", "Rigour", "Augury");
 		multiStatPrayerCB.getSelectionModel().selectFirst();
 		container.add(multiStatPrayerCB, 5, 7);
+		
+		// CSS testing
+		//multiStatPrayerCB.getStylesheets().add(Main.class.getResource("/stylesheets/combobox.css").toExternalForm());
 		
 		multiStatPrayerCB.setOnAction(e -> {
 			
@@ -1017,7 +1159,7 @@ public class Main extends Application
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 			catch(Exception ex)
 			{
@@ -1042,7 +1184,7 @@ public class Main extends Application
 				atkLvl = Integer.parseInt(text);
 				atkPotionBonus = atkPotCB.getValue().calculateBonus(atkLvl);
 				buffedAtkLvlLabel.setText((int)((atkLvl + atkPotionBonus)*(1 + atkPrayerBonus)) + "/" + atkLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		atkInputBox.setIntegersOnly(true);
@@ -1057,7 +1199,7 @@ public class Main extends Application
 				strLvl = Integer.parseInt(text);
 				strPotionBonus = strPotCB.getValue().calculateBonus(strLvl);
 				buffedStrLvlLabel.setText((int)((strLvl + strPotionBonus)*(1 + strPrayerBonus)) + "/" + strLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		strInputBox.setIntegersOnly(true);
@@ -1072,7 +1214,7 @@ public class Main extends Application
 				defLvl = Integer.parseInt(text);
 				defPotionBonus = defPotCB.getValue().calculateBonus(defLvl);
 				buffedDefLvlLabel.setText((int)((defLvl + defPotionBonus)*(1 + defPrayerBonus)) + "/" + defLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		defInputBox.setIntegersOnly(true);
@@ -1087,7 +1229,7 @@ public class Main extends Application
 				magLvl = Integer.parseInt(text);
 				magPotionBonus = magPotCB.getValue().calculateBonus(magLvl);
 				buffedMagLvlLabel.setText((int)((magLvl + magPotionBonus)*(1 + magPrayerBonus)) + "/" + magLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		magInputBox.setIntegersOnly(true);
@@ -1102,7 +1244,7 @@ public class Main extends Application
 				rngLvl = Integer.parseInt(text);
 				rngPotionBonus = rngPotCB.getValue().calculateBonus(rngLvl);
 				buffedRngLvlLabel.setText((int)((rngLvl + rngPotionBonus)*(1 + rngPrayerBonus)) + "/" + rngLvl);
-				//calculateDPS();
+				calculateDPS();
 			}
 		});
 		rngInputBox.setIntegersOnly(true);
@@ -1136,6 +1278,7 @@ public class Main extends Application
 		container.add(weaponCB, equipmentCol, 1);
 		container.add(combatStyleCB, equipmentCol, 2);
 		container.add(ammoCB, equipmentCol, 4);
+		container.add(dartCB, equipmentCol, 4);
 		container.add(headCB, equipmentCol, 5);
 		container.add(capeCB, equipmentCol, 6);
 		container.add(amuletCB, equipmentCol, 7);
@@ -1147,7 +1290,7 @@ public class Main extends Application
 		container.add(ringCB, equipmentCol, 13);
 		
 		// Make each column a percentage of the window width
-		double[] columnPercentages = new double[] {2.5, 6, 2.75, 9, 2.75, 7, 7, 8, 15, 5, 15, 2.5, 6, 2.5, 6};
+		double[] columnPercentages = new double[] {2.5, 6, 2.75, 9, 2.75, 7, 7, 8, 15, 5, 15, 2.5, 2.5, 2.5, 2.5, 2.5};
 		ColumnConstraints[] colConstraints = new ColumnConstraints[columnPercentages.length];
 		
 		for(int i = 0; i < colConstraints.length; i++)
@@ -1164,100 +1307,6 @@ public class Main extends Application
 		Label enemyLabel = createRunescapeLabelText("Enemy", 16, HPos.CENTER);
 		container.add(enemyLabel, equipmentCol + 1, 1);
 		container.add(enemyCB, equipmentCol + 2, 1);
-		
-		Button calculateButton = new Button("Calculate");
-		
-		Alert errorBox = new Alert(AlertType.ERROR);
-		errorBox.setHeaderText(null);
-		
-		calculateButton.setOnAction(e -> {
-			try
-			{
-				if(weaponCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in WEAPON slot");
-				}
-				
-				if(combatStyleCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in COMBAT STYLE slot");
-				}
-				
-				if(ammoCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in AMMO slot");
-				}
-				
-				if(headCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in HEAD slot");
-				}
-				
-				if(capeCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in CAPE slot");
-				}
-				
-				if(amuletCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in AMULET slot");
-				}
-				
-				if(chestCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in CHEST slot");
-				}
-				
-				if(legsCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in LEGS slot");
-				}
-				
-				if(shieldCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in SHIELD slot");
-				}
-				
-				if(glovesCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in GLOVES slot");
-				}
-				
-				if(bootsCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in BOOTS slot");
-				}
-				
-				if(ringCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in RING slot");
-				}
-				
-				if(enemyCB.getValue() == null)
-				{
-					throw new IllegalArgumentException("Invalid selection in ENEMY slot");
-				}
-				
-				//calculateDPS();
-				//System.out.println("Strength Bonus: " + currentSet.totalStats.meleeStrength);
-			}
-			catch(IllegalArgumentException err)
-			{
-				errorBox.setContentText(err.getMessage());
-				errorBox.showAndWait();
-			}
-
-		});
-	
-		GridPane.setHalignment(calculateButton, HPos.CENTER);
-		container.add(calculateButton, 10, 12);
-		
-		dpsLabel = createRunescapeLabelText("DPS: ", 16, HPos.CENTER);
-		container.add(dpsLabel, 14, 11);
-		
-		boundDpsLabel = createRunescapeLabelText(null, 16, HPos.CENTER);
-		boundDpsLabel.textProperty().bind(new SimpleDoubleProperty(dps).asString());
-		container.add(boundDpsLabel, 15, 11);
 		
 		return container;
 	}
@@ -1287,6 +1336,7 @@ public class Main extends Application
 	{		
 		weaponsList = new ArrayList<>();
 		ammoList = new ArrayList<>();
+		dartList = new ArrayList<>();
 		headsList = new ArrayList<>();
 		capesList = new ArrayList<>();
 		amuletsList = new ArrayList<>();
@@ -1297,39 +1347,14 @@ public class Main extends Application
 		bootsList = new ArrayList<>();
 		ringsList = new ArrayList<>();
 		
-		headCB = new ComboBox<>();
-		capeCB = new ComboBox<>();
-		amuletCB = new ComboBox<>();
-		chestCB = new ComboBox<>();
-		legsCB = new ComboBox<>();
-		shieldCB = new ComboBox<>();
-		glovesCB = new ComboBox<>();
-		bootsCB = new ComboBox<>();
-		ringCB = new ComboBox<>();
-		
+	
 		String jsonData;
 		try 
 		{
-			jsonData = readFile("res/data/items-filtered.json");
+			jsonData = readFile("res/data/" + ITEMS_FILE);
 			
 			Type type = new TypeToken<HashMap<Integer, Item>>(){}.getType();
 			HashMap<Integer, Item> jsonMap = new Gson().fromJson(jsonData, type);
-			
-			Set<Item> weaponSet = new HashSet<>();
-			Set<Item> ammoSet = new HashSet<>();
-			Set<Item> headSet = new HashSet<>();
-			Set<Item> capeSet = new HashSet<>();
-			Set<Item> amuletSet = new HashSet<>();
-			Set<Item> chestSet = new HashSet<>();
-			Set<Item> legsSet = new HashSet<>();
-			Set<Item> shieldSet = new HashSet<>();
-			Set<Item> bootsSet = new HashSet<>();
-			Set<Item> glovesSet = new HashSet<>();
-			Set<Item> ringSet = new HashSet<>();
-			
-			/*StringBuilder sb = new StringBuilder();
-			sb.append("{");
-			PrintWriter out = new PrintWriter("items-filtered.json");*/
 			
 			for(Map.Entry<Integer, Item> entry : jsonMap.entrySet())
 			{
@@ -1347,47 +1372,51 @@ public class Main extends Application
 					{
 					case "2h":
 					case "weapon":
-						weaponSet.add(item);
+						weaponsList.add(item);
+						if(item.getName().toLowerCase().contains("dart"))
+						{
+							dartList.add(item);
+						}
 						break;
 						
 					case "ammo":
-						ammoSet.add(item);
+						ammoList.add(item);
 						break;
 						
 					case "head":
-						headSet.add(item);
+						headsList.add(item);
 						break;
 						
 					case "cape":
-						capeSet.add(item);
+						capesList.add(item);
 						break;
 						
 					case "neck":
-						amuletSet.add(item);
+						amuletsList.add(item);
 						break;
 						
 					case "body":
-						chestSet.add(item);
+						chestsList.add(item);
 						break;
 						
 					case "legs":
-						legsSet.add(item);
+						legsList.add(item);
 						break;
 						
 					case "shield":
-						shieldSet.add(item);
+						shieldsList.add(item);
 						break;
 						
 					case "feet":
-						bootsSet.add(item);
+						bootsList.add(item);
 						break;
 						
 					case "hands":
-						glovesSet.add(item);
+						glovesList.add(item);
 						break;
 						
 					case "ring":
-						ringSet.add(item);
+						ringsList.add(item);
 						break;
 					}
 				}
@@ -1395,6 +1424,7 @@ public class Main extends Application
 				{
 					entry.setValue(null);
 				}
+				
 			}
 			
 			/*sb.append("}");
@@ -1413,21 +1443,10 @@ public class Main extends Application
 							      0, 0, 0, 0, 0,
 							      0, 0, 0, 0, "all"),
 					new Weapon(6, "unarmed", unarmedStance));
-
-			weaponsList.addAll(weaponSet);
-			ammoList.addAll(ammoSet);
-			headsList.addAll(headSet);
-			capesList.addAll(capeSet);
-			amuletsList.addAll(amuletSet);
-			chestsList.addAll(chestSet);
-			legsList.addAll(legsSet);
-			shieldsList.addAll(shieldSet);
-			bootsList.addAll(bootsSet);
-			glovesList.addAll(glovesSet);
-			ringsList.addAll(ringSet);
 			
 			Collections.sort(weaponsList);
 			Collections.sort(ammoList);
+			Collections.sort(dartList);
 			Collections.sort(headsList);
 			Collections.sort(capesList);
 			Collections.sort(amuletsList);
@@ -1449,11 +1468,10 @@ public class Main extends Application
 			bootsList.add(0, none);
 			glovesList.add(0, none);
 			ringsList.add(0, none);
-			
 		} 
 		catch (FileNotFoundException ex) 
 		{
-			System.err.println("Could not items-complete.json");
+			System.err.println("Could not find " + ITEMS_FILE);
 			ex.printStackTrace();
 		}
 	}
@@ -1474,6 +1492,7 @@ public class Main extends Application
 		{
 			if(!enemiesList.contains(entry.getValue()))
 				enemiesList.add(entry.getValue());
+				
 		}
 		
 		Collections.sort(enemiesList);
@@ -1503,12 +1522,12 @@ public class Main extends Application
 	
 	private static ImageView createImageView(String url)
 	{
-		return new ImageView(new Image(new File(url).toURI().toString()));
+		return new ImageView(new Image(Main.class.getResource(url).toExternalForm()));
 	}
 	
 	private static ImageView createImageView(String url, HPos alignment)
-	{
-		ImageView iv = new ImageView(new Image(new File(url).toURI().toString()));
+	{	
+		ImageView iv = new ImageView(new Image(Main.class.getResource(url).toExternalForm()));
 		GridPane.setHalignment(iv, alignment);
 		return iv;
 	}
@@ -1533,10 +1552,7 @@ public class Main extends Application
 		return rsLabel;
 	}
 	
-	
-	private static ChangeListener<Item> itemCBChangeListener = (observable, oldValue, newValue) -> {
-			calculateDPS();
-	};
+
 	
 	// Main & Utility Functions
 	
@@ -1597,19 +1613,19 @@ public class Main extends Application
 			// Determine equipment bonus based on selected attack style
 			maxAttackRoll = effectiveAttackLevel * (effectiveEquipmentBonus + 64);
 			
-			if(headCB.getValue().name.contains("slayer helmet") && enemy.isSlayerMonster)
+			if(headCB.getValue().name.toLowerCase().contains("slayer helmet") && enemy.isSlayerMonster)
 			{
-				System.out.println("On task slayer monster");
+				System.out.println("On task, fighting slayer monster");
 				maxAttackRoll *= 7.0/6.0;
 				maxHit *= 7.0/6.0;
 			}
 			
-			String attackType = combatStyleCB.getValue().getAttackType().toLowerCase();
-			
-			int enemyDefBonus = 0;
-			
-			if(attackType != null)
+			if(combatStyleCB.getValue().getAttackType() != null)
 			{
+				String attackType = combatStyleCB.getValue().getAttackType().toLowerCase();
+				
+				int enemyDefBonus = 0;
+	
 				switch(attackType)
 				{
 				case "stab":
@@ -1640,21 +1656,35 @@ public class Main extends Application
 				default:
 					break;
 				}
+			
+				maxDefenseRoll = (enemyCB.getValue().defLvl + 9) * (enemyDefBonus + 64);
 			}
 			
 			
-			maxDefenseRoll = (enemyCB.getValue().defLvl + 9) * (enemyDefBonus + 64);
+			if(maxAttackRoll > maxDefenseRoll)
+			{
+				accuracy = 1 - (maxDefenseRoll + 2) / ((double)(2 * (maxAttackRoll + 1.0)));
+			}
+			else if(maxDefenseRoll > maxAttackRoll)
+			{
+				accuracy = maxAttackRoll / ((double)(2 * maxDefenseRoll + 1.0));
+			}
+
+			dps = accuracy * (maxHit / 2.0) / (weaponCB.getValue().weaponStats.attackSpeed * 0.6);
 			
-			
-			System.out.println("Max hit: " + maxHit);
-			System.out.println("Max attack roll: " + maxAttackRoll);
-			System.out.println("Max defense roll: " + maxDefenseRoll);
+			updateDPSLabels();
 		}
 		catch(Exception ex)
 		{
 			ex.printStackTrace();
 		}
 	}
-	
-	
+
+	private static void updateDPSLabels()
+	{
+		
+		numberMaxHitLabel.setText(Integer.toString(maxHit));
+		numberAccuracyLabel.setText(Double.toString(accuracy).substring(0, 6));
+		numberDpsLabel.setText(Double.toString(dps).substring(0, 6));
+	}
 }
