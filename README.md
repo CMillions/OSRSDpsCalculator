@@ -12,3 +12,5 @@ I created a file named 'items-filtered.json' that uses the 'items-complete.json'
 [Debug Screenshot 1](https://gyazo.com/0474d5887b08171a319888c124198862)
 
 [Debug Screenshot 2](https://gyazo.com/1d7d7c1f984fa2173a4fb88fe9b03dfe)
+
+[Debug Screenshot 3](https://i.gyazo.com/d0108922adab0874a511ea7c3d912cf5.png)
