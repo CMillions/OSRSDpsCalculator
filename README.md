@@ -6,6 +6,7 @@ Based on [Bitterkoekje's Google Sheets DPS calculator](https://docs.google.com/s
 Compiled using Eclipse 2020-03 with JavaSE 11, JavaFX 11.0.2, GSON 2.8.6
 
 I'm not using SceneBuilder for the layout, so it's all done in code by hand.
+I plan on using scenebuilder soon because mixing the view code with the control code is REALLY messy!
 
 I created a file named 'items-filtered.json' that uses the 'items-complete.json' file available [here](https://www.osrsbox.com/projects/osrsbox-db/). This file only contains equippable items from OSRS and is significantly smaller than the original. I did a similar thing for the 'monsters-filtered.json' file.
 
